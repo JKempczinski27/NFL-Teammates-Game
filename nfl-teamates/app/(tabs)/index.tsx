@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView, ImageBackground } from 'react-native';
 
 const gameData = [
   {
@@ -25,8 +25,13 @@ export default function CommonPlayerGame() {
   const [userAnswer, setUserAnswer] = useState('');
   const [isCorrect, setIsCorrect] = useState(null);
   const [attemptsLeft, setAttemptsLeft] = useState(4);
+  const [showIntro, setShowIntro] = useState(true);
 
   const currentQuestion = gameData[currentIndex];
+
+  const handleStartGame = () => {
+    setShowIntro(false);
+  };
 
   const handleSubmit = () => {
     const normalized = userAnswer.trim().toLowerCase();
@@ -49,65 +54,118 @@ export default function CommonPlayerGame() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Who is the Common Player?</Text>
-
-      <View style={styles.imageRow}>
-        {currentQuestion.images.map((player, idx) => (
-          <View key={idx} style={styles.card}>
-            <Image source={{ uri: player.src }} style={styles.image} resizeMode="contain" />
-            <Text style={styles.name}>{player.name}</Text>
+    <ImageBackground
+      source={{ uri: 'https://example.com/background.jpg' }} // Replace with your actual background image URL
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.overlay}>
+        {showIntro ? (
+          <View style={styles.introContainer}>
+            <Text style={styles.title}>Welcome to Teammates</Text>
+            <Text style={styles.instructions}>
+              Guess the teammate.{"\n"}
+              You get 4 downs.{"\n"}
+              Based on 3 players with a shared connection.
+            </Text>
+            <TouchableOpacity onPress={handleStartGame} style={styles.startButton}>
+              <Text style={styles.startButtonText}>Start</Text>
+            </TouchableOpacity>
           </View>
-        ))}
+        ) : (
+          <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Who is the Common Player?</Text>
+
+            <View style={styles.imageRow}>
+              {currentQuestion.images.map((player, idx) => (
+                <View key={idx} style={styles.card}>
+                  <Image source={{ uri: player.src }} style={styles.image} resizeMode="contain" />
+                  <Text style={styles.name}>{player.name}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Your Answer"
+                value={userAnswer}
+                onChangeText={setUserAnswer}
+                editable={isCorrect !== true && attemptsLeft > 0}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { backgroundColor: isCorrect ? 'green' : 'blue' }
+                ]}
+                onPress={handleSubmit}
+                disabled={isCorrect || attemptsLeft === 0}
+              >
+                <Text style={styles.buttonText}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.attempts}>Attempts Left: {attemptsLeft}</Text>
+
+            {isCorrect !== null && (
+              <Text style={[styles.feedback, { color: isCorrect ? 'green' : 'red' }]}>
+                {isCorrect ? 'Correct!' : 'Incorrect. Try again.'
+              }</Text>
+            )}
+
+            {isCorrect && (
+              <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+                <Text style={styles.nextButtonText}>Next Question</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        )}
       </View>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Your Answer"
-          value={userAnswer}
-          onChangeText={setUserAnswer}
-          editable={isCorrect !== true && attemptsLeft > 0}
-        />
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: isCorrect ? 'green' : 'blue' }
-          ]}
-          onPress={handleSubmit}
-          disabled={isCorrect || attemptsLeft === 0}
-        >
-          <Text style={styles.buttonText}>Submit</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.attempts}>Attempts Left: {attemptsLeft}</Text>
-
-      {isCorrect !== null && (
-        <Text style={[styles.feedback, { color: isCorrect ? 'green' : 'red' }]}>
-          {isCorrect ? 'Correct!' : 'Incorrect. Try again.'}
-        </Text>
-      )}
-
-      {isCorrect && (
-        <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Next Question</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // black with 60% opacity
     padding: 20,
     alignItems: 'center',
   },
+  introContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 40,
+    fontWeight: '400',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#fff',
+  },
+  instructions: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  startButton: {
+    padding: 15,
+    backgroundColor: '#007BFF',
+    borderRadius: 8,
+  },
+  startButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  container: {
+    padding: 20,
+    alignItems: 'center',
   },
   imageRow: {
     flexDirection: 'row',
@@ -118,14 +176,22 @@ const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
     margin: 10,
+    padding: 10,
+    backgroundColor: '#ffffffcc', // translucent white
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // Android shadow
   },
   image: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 200,
   },
   name: {
     marginTop: 5,
-    fontSize: 14,
+    fontSize: 18,
     textAlign: 'center',
   },
   inputContainer: {
@@ -134,8 +200,8 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    width: '80%',
+    borderColor: '#fff',
+    width: '40%',
     padding: 10,
     borderRadius: 8,
     marginBottom: 10,
@@ -146,13 +212,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
   },
   attempts: {
     marginTop: 10,
     fontSize: 16,
+    color: '#fff',
   },
   feedback: {
     marginTop: 10,
