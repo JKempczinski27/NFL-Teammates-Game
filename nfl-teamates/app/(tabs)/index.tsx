@@ -55,14 +55,14 @@ export default function CommonPlayerGame() {
 
   return (
     <ImageBackground
-      source={{ uri: 'https://example.com/background.jpg' }} // Replace with your actual background image URL
+      source={{ uri: 'https://png.pngtree.com/background/20240803/original/pngtree-d-rendered-dark-industrial-background-with-black-dots-in-abstract-arrangement-picture-image_9956384.jpg' }} // Replace with your actual background image URL
       style={styles.background}
       resizeMode="cover"
     >
       <View style={styles.overlay}>
         {showIntro ? (
           <View style={styles.introContainer}>
-            <Text style={styles.title}>Welcome to Teammates</Text>
+            <Text style={styles.title}>Huddle</Text>
             <Text style={styles.instructions}>
               Guess the teammate.{"\n"}
               You get 4 downs.{"\n"}
