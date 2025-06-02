@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
 
 const gameData = [
@@ -70,9 +72,9 @@ export default function CommonPlayerGame() {
 			<img
 				src="https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.svg"
 				alt="NFL Logo"
-				style={{ width: 240, height: 200, marginBottom: 4 }}
+				style={{ width: 300, height: 250, marginBottom: 4 }}
 			/>
-			<Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontSize: '50' }}>
+			<Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontSize: '50px' }}>
 				Who is the Common Player?
 			</Typography>
 
@@ -113,27 +115,37 @@ export default function CommonPlayerGame() {
 					sx={{ width: '300px', bgcolor: 'white', borderRadius: '8px', boxShadow: 5 }}
 					disabled={isCorrect || attemptsLeft === 0}
 				/>
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleSubmit}
-					disabled={isCorrect || attemptsLeft === 0}
-          sx={{ 
-            width: '150px',
-            backgroundColor: isCorrect ? 'green' : 'blue',
-            '&:hover': {
-              backgroundColor: isCorrect ? 'darkgreen' : 'darkblue',
-            },
-            borderRadius: '8px',
-            padding: '10px 20px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-			justifyContent: 'center',
-
-           }}
-				>
-					Submit
-				</Button>
+		<Button
+			variant="contained"
+			color="primary"
+			onClick={handleSubmit}
+			disabled={isCorrect || attemptsLeft === 0}
+			sx={{
+				width: '150px',
+				backgroundColor:
+					isCorrect === true
+						? 'green'
+						: isCorrect === false
+						? 'blue'
+						: 'white',
+				'&:hover': {
+					backgroundColor:
+						isCorrect === true
+							? 'darkgreen'
+							: isCorrect === false
+							? 'darkblue'
+							: '#f0f0f0',
+				},
+				borderRadius: '8px',
+				padding: '10px 20px',
+				fontSize: '16px',
+				fontWeight: 'bold',
+				justifyContent: 'center',
+				color: isCorrect === null ? 'black' : 'white',
+			}}
+		>
+			Submit
+		</Button>
 			</Box>
 
 			<Typography sx={{ marginTop: 1 }}>
@@ -148,6 +160,54 @@ export default function CommonPlayerGame() {
 					{isCorrect ? 'Correct!' : 'Incorrect. Try again.'}
 				</Typography>
 			)}
+
+			{/* --- Social Share Buttons --- */}
+			<Box sx={{ marginTop: 4, display: 'flex', gap: 2 }}>
+				<a
+					href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					style={{ textDecoration: 'none' }}
+				>
+					<Button variant="contained" sx={{ backgroundColor: '#4267B2', color: 'white' }}>
+						<FontAwesomeIcon icon={faFacebook} style={{ marginRight: '8px' }} />
+						Facebook
+					</Button>
+				</a>
+				<a
+					href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=Check%20out%20this%20NFL%20Teammates%20Game!`}
+					target="_blank"
+					rel="noopener noreferrer"
+					style={{ textDecoration: 'none' }}
+				>
+					<Button variant="contained" sx={{ backgroundColor: '#1DA1F2', color: 'white' }}>
+						<FontAwesomeIcon icon={faTwitter} style={{ marginRight: '8px' }} />
+						Twitter
+					</Button>
+				</a>
+				<a
+					href={`https://www.reddit.com/submit?url=${encodeURIComponent(window.location.href)}&title=Check%20out%20this%20NFL%20Teammates%20Game!`}
+					target="_blank"
+					rel="noopener noreferrer"
+					style={{ textDecoration: 'none' }}
+				>
+					<Button variant="contained" sx={{ backgroundColor: '#FF4500', color: 'white' }}>
+						<FontAwesomeIcon icon={faReddit} style={{ marginRight: '8px' }} />
+						Reddit
+					</Button>
+				</a>
+				<a
+					href={`https://wa.me/?text=${encodeURIComponent('Check out this NFL Teammates Game! ' + window.location.href)}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					style={{ textDecoration: 'none' }}
+				>
+					<Button variant="contained" sx={{ backgroundColor: '#25D366', color: 'white' }}>
+						<FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: '8px' }} />
+						WhatsApp
+					</Button>
+				</a>
+			</Box>
 		</Box>
 	);
 }
