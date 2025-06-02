@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
+import './App.css'
 
 const gameData = [
 	{
@@ -52,8 +53,26 @@ export default function CommonPlayerGame() {
 	};
 
 	return (
-		<Box sx={{ padding: 4, textAlign: 'center' }}>
-			<Typography variant="h4" gutterBottom>
+		<Box
+			sx={{
+				minHeight: '100vh', // Full viewport height
+				display: 'flex',
+				flexDirection: 'column',
+				alignItems: 'center',
+				justifyContent: 'center',
+				padding: 4,
+				color: 'white',
+				fontSize: '50px',
+				backgroundColor: '#964b00', // Optional: match your CSS
+				backgroundImage: 'url("https://www.transparenttextures.com/patterns/basketball.png")', // Optional: match your CSS
+			}}
+		>
+			<img
+				src="https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.svg"
+				alt="NFL Logo"
+				style={{ width: 240, height: 200, marginBottom: 4 }}
+			/>
+			<Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontSize: '50' }}>
 				Who is the Common Player?
 			</Typography>
 
@@ -91,7 +110,7 @@ export default function CommonPlayerGame() {
 					variant="outlined"
 					value={userAnswer}
 					onChange={(e) => setUserAnswer(e.target.value)}
-					sx={{ width: '300px' }}
+					sx={{ width: '300px', bgcolor: 'white', borderRadius: '8px', boxShadow: 5 }}
 					disabled={isCorrect || attemptsLeft === 0}
 				/>
 				<Button
@@ -109,6 +128,7 @@ export default function CommonPlayerGame() {
             padding: '10px 20px',
             fontSize: '16px',
             fontWeight: 'bold',
+			justifyContent: 'center',
 
            }}
 				>
