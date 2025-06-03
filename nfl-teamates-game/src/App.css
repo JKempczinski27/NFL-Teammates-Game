@@ -3,6 +3,8 @@ body {
   background-image: url("https://www.transparenttextures.com/patterns/basketball.png");
   position: relative;
   /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
+  font-family: 'Franklin', Arial, sans-serif;
+  font-weight: bold; /* or 700 */
 }
 
 body::before,
@@ -63,4 +65,11 @@ body::after {
   to {
     transform: rotate(360deg);
   }
+}
+
+@font-face {
+  font-family: 'Franklin';
+  src: url('./fonts/Franklin.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
 }

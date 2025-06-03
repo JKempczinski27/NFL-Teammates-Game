@@ -74,9 +74,18 @@ export default function CommonPlayerGame() {
 				alt="NFL Logo"
 				style={{ width: 300, height: 250, marginBottom: 4 }}
 			/>
-			<Typography variant="h4" gutterBottom sx={{ color: 'white', fontWeight: 'bold', fontSize: '50px' }}>
-				Who is the Common Player?
-			</Typography>
+			<Typography
+  variant="h4"
+  gutterBottom
+  sx={{
+    color: '#C0C0C0',
+    fontWeight: 'bold',
+    fontSize: '65px',
+    WebkitTextStroke: '4px black'
+  }}
+>
+  Who is the Common Player?
+</Typography>
 
 			<Grid container spacing={2} justifyContent="center">
 				{currentQuestion.images.map((player, idx) => (
@@ -148,7 +157,7 @@ export default function CommonPlayerGame() {
 		</Button>
 			</Box>
 
-			<Typography sx={{ marginTop: 1 }}>
+			<Typography sx={{ marginTop: 1, color: '#C0C0C0', fontSize: '20px', fontWeight: 'bold', WebkitTextStroke: '0.5px black' }}>
 				Attempts Left: {attemptsLeft}
 			</Typography>
 
