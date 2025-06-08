@@ -44,6 +44,9 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+const trackRouter = require('./routes/track');
+app.use('/api/track', trackRouter);
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

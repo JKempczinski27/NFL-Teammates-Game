@@ -1,8 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
+
+function getSessionId() {
+  let id = localStorage.getItem('sessionId');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('sessionId', id);
+  }
+  return id;
+}
+
+const sessionId = getSessionId();
+
+async function trackEvent(eventType, eventData) {
+  await fetch('/api/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eventType,
+      eventData,
+      sessionId,
+      timestamp: new Date().toISOString(),
+    }),
+  });
+}
 
 const gameData = [
 	{
@@ -32,20 +56,28 @@ export default function CommonPlayerGame() {
 	const currentQuestion = gameData[currentIndex];
 
 	const handleSubmit = () => {
-		const normalized = userAnswer.trim().toLowerCase();
-		const correct = currentQuestion.answer.trim().toLowerCase();
+  const normalized = userAnswer.trim().toLowerCase();
+  const correct = currentQuestion.answer.trim().toLowerCase();
 
-		if (normalized === correct) {
-			setIsCorrect(true);
-		} else {
-			const newAttempts = attemptsLeft - 1;
-			setAttemptsLeft(newAttempts);
-			setIsCorrect(false);
-			if (newAttempts === 0) {
-				// Optionally lock input if you want
-			}
-		}
-	};
+  const wasCorrect = normalized === correct;
+  trackEvent('answer_submitted', {
+    questionIndex: currentIndex,
+    userAnswer,
+    isCorrect: wasCorrect,
+    attemptsLeft,
+  });
+
+  if (wasCorrect) {
+    setIsCorrect(true);
+  } else {
+    const newAttempts = attemptsLeft - 1;
+    setAttemptsLeft(newAttempts);
+    setIsCorrect(false);
+    if (newAttempts === 0) {
+      // Optionally lock input if you want
+    }
+  }
+};
 
 	const handleNext = () => {
 		setCurrentIndex((prev) => (prev + 1) % gameData.length);
@@ -53,6 +85,11 @@ export default function CommonPlayerGame() {
 		setIsCorrect(null);
 		setAttemptsLeft(4);
 	};
+
+	// Add this function to handle share tracking
+	function handleShare(platform) {
+		trackEvent('shared', { platform });
+	}
 
 	return (
 		<Box
@@ -177,6 +214,7 @@ export default function CommonPlayerGame() {
 					target="_blank"
 					rel="noopener noreferrer"
 					style={{ textDecoration: 'none' }}
+					onClick={() => handleShare('facebook')}
 				>
 					<Button variant="contained" sx={{ backgroundColor: '#4267B2', color: 'white' }}>
 						<FontAwesomeIcon icon={faFacebook} style={{ marginRight: '8px' }} />
@@ -188,6 +226,7 @@ export default function CommonPlayerGame() {
 					target="_blank"
 					rel="noopener noreferrer"
 					style={{ textDecoration: 'none' }}
+					onClick={() => handleShare('twitter')}
 				>
 					<Button variant="contained" sx={{ backgroundColor: '#1DA1F2', color: 'white' }}>
 						<FontAwesomeIcon icon={faTwitter} style={{ marginRight: '8px' }} />
@@ -199,6 +238,7 @@ export default function CommonPlayerGame() {
 					target="_blank"
 					rel="noopener noreferrer"
 					style={{ textDecoration: 'none' }}
+					onClick={() => handleShare('reddit')}
 				>
 					<Button variant="contained" sx={{ backgroundColor: '#FF4500', color: 'white' }}>
 						<FontAwesomeIcon icon={faReddit} style={{ marginRight: '8px' }} />
@@ -210,6 +250,7 @@ export default function CommonPlayerGame() {
 					target="_blank"
 					rel="noopener noreferrer"
 					style={{ textDecoration: 'none' }}
+					onClick={() => handleShare('whatsapp')}
 				>
 					<Button variant="contained" sx={{ backgroundColor: '#25D366', color: 'white' }}>
 						<FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: '8px' }} />
