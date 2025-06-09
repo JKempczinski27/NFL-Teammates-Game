@@ -8,4 +8,8 @@ router.post('/', async (req, res) => {
   res.sendStatus(200);
 });
 
+router.get('/', (req, res) => {
+  res.send('Track endpoint is working!');
+});
+
 module.exports = router;
