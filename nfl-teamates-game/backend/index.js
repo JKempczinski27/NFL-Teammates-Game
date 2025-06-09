@@ -34,13 +34,19 @@ app.post('/api/player', async (req, res) => {
   }
 });
 
-app.get('/api/test-db', async (req, res) => {
+// Example: Insert a tracking event into player_updated
+await pool.query(
+  'INSERT INTO player_updated (session_id, event_type, event_data, created_at) VALUES ($1, $2, $3, NOW())',
+  [sessionId, eventType, eventData]
+);
+
+// Test DB connection route
+app.get('/api/db-test', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()'); // Simple query to check the connection
-    res.status(200).json({ success: true, time: result.rows[0].now });
+    res.json({ connected: true, time: result.rows[0].now });
   } catch (err) {
-    console.error('Database connection error:', err);
-    res.status(500).json({ success: false, error: 'Database connection failed' });
+    res.status(500).json({ connected: false, error: err.message });
   }
 });
 
