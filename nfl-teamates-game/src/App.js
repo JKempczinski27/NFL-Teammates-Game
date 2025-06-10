@@ -277,9 +277,7 @@ export default function CommonPlayerGame() {
 	);
 }
 
-import React, { useState } from 'react';
-
-export default function PlayerForm() {
+export function PlayerForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
 
