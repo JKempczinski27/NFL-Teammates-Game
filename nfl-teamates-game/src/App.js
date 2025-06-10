@@ -48,7 +48,7 @@ const gameData = [
 	},
 ];
 
-export default function CommonPlayerGame() {
+function CommonPlayerGame() {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [userAnswer, setUserAnswer] = useState('');
 	const [isCorrect, setIsCorrect] = useState(null);
@@ -277,45 +277,22 @@ export default function CommonPlayerGame() {
 	);
 }
 
-export function PlayerForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch('/api/addPlayer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email }),
-      });
-      const result = await response.json();
-      console.log('Player added:', result);
-    } catch (error) {
-      console.error('Error adding player:', error);
-    }
-  };
-
+function PlayerList({ players }) {
   return (
     <div>
-      <h1>Enter Your Credentials</h1>
-      <input
-        type="text"
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <button onClick={handleSubmit}>Submit</button>
+      <h1>Players</h1>
+      <ul>
+        {players.map((player, index) => (
+          <li key={index}>
+            {player.name} - {player.email}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-export default function PlayerList() {
+export default function App() {
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
@@ -334,14 +311,8 @@ export default function PlayerList() {
 
   return (
     <div>
-      <h1>Players</h1>
-      <ul>
-        {players.map((player, index) => (
-          <li key={index}>
-            {player.name} - {player.email}
-          </li>
-        ))}
-      </ul>
+      <CommonPlayerGame />
+      <PlayerList players={players} />
     </div>
   );
 }
