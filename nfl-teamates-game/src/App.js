@@ -3,7 +3,7 @@ import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
-import { getPlayers } from './db';
+
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
@@ -311,6 +311,37 @@ export function PlayerForm() {
         onChange={(e) => setEmail(e.target.value)}
       />
       <button onClick={handleSubmit}>Submit</button>
+    </div>
+  );
+}
+
+export default function PlayerList() {
+  const [players, setPlayers] = useState([]);
+
+  useEffect(() => {
+    async function fetchPlayers() {
+      try {
+        const response = await fetch('/api/getPlayers');
+        const data = await response.json();
+        setPlayers(data);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+      }
+    }
+
+    fetchPlayers();
+  }, []);
+
+  return (
+    <div>
+      <h1>Players</h1>
+      <ul>
+        {players.map((player, index) => (
+          <li key={index}>
+            {player.name} - {player.email}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
