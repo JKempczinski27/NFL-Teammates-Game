@@ -3,7 +3,7 @@ import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
-
+import { getPlayers } from './db';
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
