@@ -3,6 +3,7 @@ import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
+import { getPlayers } from './db';
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
@@ -52,6 +53,20 @@ export default function CommonPlayerGame() {
 	const [userAnswer, setUserAnswer] = useState('');
 	const [isCorrect, setIsCorrect] = useState(null);
 	const [attemptsLeft, setAttemptsLeft] = useState(4);
+  const [players, setPlayers] = useState([]);
+
+  useEffect(() => {
+    async function fetchPlayers() {
+      try {
+        const data = await getPlayers();
+        setPlayers(data);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+      }
+    }
+
+    fetchPlayers();
+  }, []);
 
 	const currentQuestion = gameData[currentIndex];
 
@@ -260,4 +275,44 @@ export default function CommonPlayerGame() {
 			</Box>
 		</Box>
 	);
+}
+
+import React, { useState } from 'react';
+
+export default function PlayerForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch('/api/addPlayer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email }),
+      });
+      const result = await response.json();
+      console.log('Player added:', result);
+    } catch (error) {
+      console.error('Error adding player:', error);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Enter Your Credentials</h1>
+      <input
+        type="text"
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button onClick={handleSubmit}>Submit</button>
+    </div>
+  );
 }
