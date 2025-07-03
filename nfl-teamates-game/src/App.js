@@ -54,20 +54,6 @@ function CommonPlayerGame() {
 	const [userAnswer, setUserAnswer] = useState('');
 	const [isCorrect, setIsCorrect] = useState(null);
 	const [attemptsLeft, setAttemptsLeft] = useState(4);
-  const [players, setPlayers] = useState([]);
-
-  useEffect(() => {
-    async function fetchPlayers() {
-      try {
-        const data = await getPlayers();
-        setPlayers(data);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-      }
-    }
-
-    fetchPlayers();
-  }, []);
 
 	const currentQuestion = gameData[currentIndex];
 
@@ -94,13 +80,6 @@ function CommonPlayerGame() {
     }
   }
 };
-
-	const handleNext = () => {
-		setCurrentIndex((prev) => (prev + 1) % gameData.length);
-		setUserAnswer('');
-		setIsCorrect(null);
-		setAttemptsLeft(4);
-	};
 
 	// Add this function to handle share tracking
 	function handleShare(platform) {
@@ -278,6 +257,16 @@ function CommonPlayerGame() {
 }
 
 function PlayerList({ players }) {
+  // Ensure players is an array before mapping
+  if (!Array.isArray(players)) {
+    return (
+      <div>
+        <h1>Players</h1>
+        <p>Loading players...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1>Players</h1>
@@ -298,11 +287,11 @@ export default function App() {
   useEffect(() => {
     async function fetchPlayers() {
       try {
-        const response = await fetch('/api/getPlayers');
-        const data = await response.json();
+        const data = await getPlayers();
         setPlayers(data);
       } catch (error) {
         console.error('Error fetching players:', error);
+        setPlayers([]); // Set empty array as fallback
       }
     }
 

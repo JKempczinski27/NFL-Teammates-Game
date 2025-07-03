@@ -1,4 +1,4 @@
-const { getPlayers } = require('./db');
+import { getPlayers } from './db.js';
 
 async function testConnection() {
   try {

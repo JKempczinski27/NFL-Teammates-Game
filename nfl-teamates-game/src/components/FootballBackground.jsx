@@ -33,10 +33,28 @@ export default function FootballBackground() {
           }}
           viewBox="0 0 100 60"
         >
+          {/* Main brown oval body of the football */}
           <ellipse cx="50" cy="30" rx="48" ry="26" fill="#9e5e3c" />
-          <path d="M15 30 L85 30" stroke="#fff" strokeWidth="4"/>
-          <line x1="40" y1="20" x2="60" y2="40" stroke="#fff" strokeWidth="2"/>
-          <line x1="45" y1="22" x2="65" y2="42" stroke="#fff" strokeWidth="2"/>
+
+          {/* Individual shorter vertical stitches (now slightly longer) */}
+          {[35, 38, 41, 44, 47, 50, 53, 56, 59, 62, 65].map((x, i) => (
+              // Changed y coordinates from 27/33 to 26/34 for slightly more length
+              <path key={`stitch-${i}`} d={`M${x} 26 Q${x} 30 ${x} 34`} stroke="#fff" strokeWidth="1.5" fill="none" />
+          ))}
+
+          {/* The long bisecting lace - a single, slightly curved horizontal line */}
+          <path d="M32 30 A 60 10 0 0 1 68 30" stroke="#fff" strokeWidth="2.5" fill="none" />
+
+          {/* Optional: Tiny dots for the lace holes where the long lace would go through the small stitches */}
+          <circle cx="32" cy="30" r="0.7" fill="#fff" />
+          <circle cx="37" cy="30" r="0.7" fill="#fff" />
+          <circle cx="42" cy="30" r="0.7" fill="#fff" />
+          <circle cx="47" cy="30" r="0.7" fill="#fff" />
+          <circle cx="52" cy="30" r="0.7" fill="#fff" />
+          <circle cx="57" cy="30" r="0.7" fill="#fff" />
+          <circle cx="62" cy="30" r="0.7" fill="#fff" />
+          <circle cx="68" cy="30" r="0.7" fill="#fff" />
+
         </svg>
       ))}
     </div>
