@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
 import { getPlayers } from './db';
+import FootballBackground from './components/FootballBackground';
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
@@ -311,6 +312,7 @@ export default function App() {
 
   return (
     <div>
+      <FootballBackground />
       <CommonPlayerGame />
       <PlayerList players={players} />
     </div>
