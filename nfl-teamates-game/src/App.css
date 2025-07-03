@@ -6,26 +6,6 @@ body {
   padding: 0;
 }
 
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 80px; /* Adjust thickness as needed */
-  background-color: #ffffff;
-  background-image: url("https://www.transparenttextures.com/patterns/basketball.png");
-  z-index: 9999;
-}
-
-body::before {
-  left: 0;
-}
-
-body::after {
-  right: 0;
-}
-
 .App {
   text-align: center;
 }

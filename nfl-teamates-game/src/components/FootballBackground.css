@@ -4,68 +4,31 @@
   left: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  pointer-events: none;
   z-index: -1;
-  background: linear-gradient(135deg, #2d5016 0%, #4a7c26 25%, #2d5016 50%, #4a7c26 75%, #2d5016 100%);
-  background-image: 
-    /* Yard lines */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 9.09%,
-      rgba(255, 255, 255, 0.3) 9.09%,
-      rgba(255, 255, 255, 0.3) 10%
-    ),
-    /* Hash marks */
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 49.5%,
-      rgba(255, 255, 255, 0.2) 49.5%,
-      rgba(255, 255, 255, 0.2) 50.5%
-    );
-}
-
-.football-bg::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.5);
-  transform: translateY(-50%);
-}
-
-.football-bg::after {
-  content: "50";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 120px;
-  font-weight: bold;
-  font-family: Arial, sans-serif;
+  overflow: hidden;
+  /* Clean solid green football field background */
+  background-color: #1e4d0f;
 }
 
 .football {
   position: absolute;
-  bottom: -80px; /* start slightly below the screen */
+  bottom: -100px;
   width: var(--size);
   height: calc(var(--size) * 0.6);
   opacity: var(--opacity);
-  animation: floatUp var(--duration) linear infinite;
-  animation-delay: var(--delay);
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+  animation: float var(--duration) infinite linear var(--delay);
+  transform: rotate(var(--rotate));
+  pointer-events: none;
+  z-index: 3;
 }
 
-@keyframes floatUp {
+@keyframes float {
   from {
-    transform: translateY(0) rotate(0deg);
+    bottom: -100px;
+    transform: translateY(0) rotate(var(--rotate));
   }
   to {
-    transform: translateY(-110vh) rotate(var(--rotate));
+    bottom: 100vh;
+    transform: translateY(-50px) rotate(calc(var(--rotate) + 360deg));
   }
 }

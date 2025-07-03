@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
+import { Box, TextField, Typography, Button, Card, CardMedia, Grid, Container } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
@@ -256,31 +256,6 @@ function CommonPlayerGame() {
 	);
 }
 
-function PlayerList({ players }) {
-  // Ensure players is an array before mapping
-  if (!Array.isArray(players)) {
-    return (
-      <div>
-        <h1>Players</h1>
-        <p>Loading players...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <h1>Players</h1>
-      <ul>
-        {players.map((player, index) => (
-          <li key={index}>
-            {player.name} - {player.email}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 export default function App() {
   const [players, setPlayers] = useState([]);
 
@@ -299,10 +274,13 @@ export default function App() {
   }, []);
 
   return (
-    <div>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <FootballBackground />
+      
+      {/* Remove this PlayerList component that's showing the example players */}
+      {/* <PlayerList players={players || []} /> */}
+      
       <CommonPlayerGame />
-      <PlayerList players={players} />
-    </div>
+    </Container>
   );
 }
