@@ -2,14 +2,18 @@ import React from 'react';
 import './FootballBackground.css';
 
 const floats = [
-  { left: '10%', size: 60, duration: 30, delay: -5, opacity: 0.3, rotate: 20 },
-  { left: '25%', size: 50, duration: 25, delay: -15, opacity: 0.4, rotate: -15 },
-  { left: '40%', size: 70, duration: 35, delay: -10, opacity: 0.25, rotate: 30 },
-  { left: '55%', size: 55, duration: 28, delay: -20, opacity: 0.35, rotate: -25 },
-  { left: '70%', size: 65, duration: 32, delay: -8,  opacity: 0.3, rotate: 15 },
-  { left: '85%', size: 50, duration: 27, delay: -12, opacity: 0.4, rotate: -20 },
-  { left: '5%',  size: 55, duration: 33, delay: -18, opacity: 0.3, rotate: 10 },
-  { left: '90%', size: 60, duration: 29, delay: -3,  opacity: 0.25, rotate: -30 },
+  { left: '10%', size: 60, duration: 30, delay: -5, opacity: 0.15, rotate: 20 },
+  { left: '25%', size: 50, duration: 25, delay: -15, opacity: 0.2, rotate: -15 },
+  { left: '40%', size: 70, duration: 35, delay: -10, opacity: 0.12, rotate: 30 },
+  { left: '55%', size: 55, duration: 28, delay: -20, opacity: 0.18, rotate: -25 },
+  { left: '70%', size: 65, duration: 32, delay: -8,  opacity: 0.15, rotate: 15 },
+  { left: '85%', size: 50, duration: 27, delay: -12, opacity: 0.2, rotate: -20 },
+  { left: '5%',  size: 55, duration: 33, delay: -18, opacity: 0.16, rotate: 10 },
+  { left: '90%', size: 60, duration: 29, delay: -3,  opacity: 0.13, rotate: -30 },
+  { left: '15%', size: 45, duration: 26, delay: -25, opacity: 0.1, rotate: 45 },
+  { left: '35%', size: 75, duration: 38, delay: -30, opacity: 0.08, rotate: -10 },
+  { left: '65%', size: 52, duration: 31, delay: -7,  opacity: 0.14, rotate: 25 },
+  { left: '80%', size: 58, duration: 34, delay: -22, opacity: 0.11, rotate: -35 },
 ];
 
 export default function FootballBackground() {

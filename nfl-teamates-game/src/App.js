@@ -118,8 +118,7 @@ function CommonPlayerGame() {
 				padding: 4,
 				color: 'white',
 				fontSize: '50px',
-				backgroundColor: '#964b00', // Optional: match your CSS
-				backgroundImage: 'url("https://www.transparenttextures.com/patterns/basketball.png")', // Optional: match your CSS
+				position: 'relative',
 			}}
 		>
 			<img
