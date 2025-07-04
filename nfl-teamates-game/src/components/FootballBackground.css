@@ -1,0 +1,34 @@
+.football-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+  /* Clean solid green football field background */
+  background-color: #1e4d0f;
+}
+
+.football {
+  position: absolute;
+  bottom: -100px;
+  width: var(--size);
+  height: calc(var(--size) * 0.6);
+  opacity: var(--opacity);
+  animation: float var(--duration) infinite linear var(--delay);
+  transform: rotate(var(--rotate));
+  pointer-events: none;
+  z-index: 3;
+}
+
+@keyframes float {
+  from {
+    bottom: -100px;
+    transform: translateY(0) rotate(var(--rotate));
+  }
+  to {
+    bottom: 100vh;
+    transform: translateY(-50px) rotate(calc(var(--rotate) + 360deg));
+  }
+}

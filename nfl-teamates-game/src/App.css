@@ -1,30 +1,9 @@
 body {
-  background-color: #964b00;
-  background-image: url("https://www.transparenttextures.com/patterns/basketball.png");
   position: relative;
-  /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
   font-family: 'Franklin', Arial, sans-serif;
   font-weight: bold; /* or 700 */
-}
-
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 80px; /* Adjust thickness as needed */
-  background-color: #ffffff;
-  background-image: url("https://www.transparenttextures.com/patterns/basketball.png");
-  z-index: 9999;
-}
-
-body::before {
-  left: 0;
-}
-
-body::after {
-  right: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .App {
@@ -43,9 +22,6 @@ body::after {
 }
 
 .App-header {
-  background-color: #964b00;
-  background-image: url("https://www.transparenttextures.com/patterns/basketball.png");
-  /* This is mostly intended for prototyping; please download the pattern and re-host for production environments. Thank you! */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
