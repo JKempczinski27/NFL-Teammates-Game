@@ -1,17 +1,28 @@
 const { Pool } = require('pg');
 
-// Hardcoded connection string from .env file for verification
-const DATABASE_URL = 'postgresql://postgres:rYaxKDTGRwelTItjmNkjmutTnDZJCtvO@postgres-ulot.railway.internal:5432/railway';
+// Determine which database to use
+const args = process.argv.slice(2);
+const useLocal = args.includes('--local') || !args.includes('--railway');
 
-const pool = new Pool({
-  connectionString: DATABASE_URL,
+// Database configuration
+const config = useLocal ? {
+  user: 'postgres',
+  password: 'postgres',
+  host: 'localhost',
+  database: 'nfl_teammates_game',
+  port: 5432,
+} : {
+  connectionString: 'postgresql://postgres:rYaxKDTGRwelTItjmNkjmutTnDZJCtvO@postgres-ulot.railway.internal:5432/railway',
   ssl: {
     rejectUnauthorized: false,
   },
-});
+};
+
+const pool = new Pool(config);
 
 async function verifyDatabase() {
-  console.log('=== PostgreSQL Database Verification ===\n');
+  console.log('=== PostgreSQL Database Verification ===');
+  console.log(`Environment: ${useLocal ? 'LOCAL' : 'RAILWAY'}\n`);
 
   try {
     // Test connection
