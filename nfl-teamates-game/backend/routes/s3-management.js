@@ -8,6 +8,7 @@ const {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  HeadBucketCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { s3Client, BUCKET_NAME } = require('../config/s3');
@@ -23,6 +24,111 @@ const upload = multer({
 
 // All routes are protected with authentication
 router.use(authenticate);
+
+// 🧪 Test S3 connection
+router.get('/test', async (req, res) => {
+  try {
+    const testResults = {
+      timestamp: new Date().toISOString(),
+      bucketName: BUCKET_NAME,
+      region: process.env.AWS_REGION || 'not-set',
+      tests: {},
+    };
+
+    // Test 1: Check if credentials are configured
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      testResults.tests.credentials = {
+        status: 'failed',
+        message: 'AWS credentials not configured in environment variables',
+      };
+      return res.status(500).json({
+        success: false,
+        message: 'AWS credentials not configured',
+        details: testResults,
+      });
+    }
+
+    testResults.tests.credentials = {
+      status: 'passed',
+      message: 'AWS credentials are configured',
+    };
+
+    // Test 2: Check if bucket name is set
+    if (!BUCKET_NAME) {
+      testResults.tests.bucketName = {
+        status: 'failed',
+        message: 'S3_BUCKET_NAME not configured in environment variables',
+      };
+      return res.status(500).json({
+        success: false,
+        message: 'Bucket name not configured',
+        details: testResults,
+      });
+    }
+
+    testResults.tests.bucketName = {
+      status: 'passed',
+      message: `Bucket name is set to: ${BUCKET_NAME}`,
+    };
+
+    // Test 3: Check if bucket exists and is accessible
+    try {
+      const headCommand = new HeadBucketCommand({ Bucket: BUCKET_NAME });
+      await s3Client.send(headCommand);
+
+      testResults.tests.bucketAccess = {
+        status: 'passed',
+        message: 'Successfully connected to S3 bucket',
+      };
+    } catch (error) {
+      testResults.tests.bucketAccess = {
+        status: 'failed',
+        message: `Cannot access bucket: ${error.message}`,
+        error: error.name,
+      };
+
+      return res.status(500).json({
+        success: false,
+        message: 'Cannot access S3 bucket',
+        details: testResults,
+      });
+    }
+
+    // Test 4: Test list operation
+    try {
+      const listCommand = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        MaxKeys: 1,
+      });
+      const listResult = await s3Client.send(listCommand);
+
+      testResults.tests.listOperation = {
+        status: 'passed',
+        message: 'Successfully tested list operation',
+        fileCount: listResult.KeyCount || 0,
+      };
+    } catch (error) {
+      testResults.tests.listOperation = {
+        status: 'failed',
+        message: `List operation failed: ${error.message}`,
+      };
+    }
+
+    // All tests passed
+    return res.json({
+      success: true,
+      message: 'All S3 connection tests passed',
+      details: testResults,
+    });
+  } catch (error) {
+    console.error('S3 connection test error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Connection test failed',
+      error: error.message,
+    });
+  }
+});
 
 // 📁 List all objects in the bucket
 router.get('/files', async (req, res) => {
