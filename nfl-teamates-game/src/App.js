@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
@@ -17,16 +17,21 @@ function getSessionId() {
 const sessionId = getSessionId();
 
 async function trackEvent(eventType, eventData) {
-  await fetch('/api/track', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventType,
-      eventData,
-      sessionId,
-      timestamp: new Date().toISOString(),
-    }),
-  });
+  try {
+    await fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType,
+        eventData,
+        sessionId,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+      }),
+    });
+  } catch (error) {
+    console.error('Error tracking event:', error);
+  }
 }
 
 const gameData = [
@@ -55,6 +60,64 @@ function CommonPlayerGame() {
 	const [attemptsLeft, setAttemptsLeft] = useState(4);
   const [players, setPlayers] = useState([]);
 
+  // Tracking state
+  const [gameSessionId, setGameSessionId] = useState(null);
+  const gameStartTimeRef = useRef(null);
+  const questionStartTimeRef = useRef(null);
+  const [totalQuestionsAnswered, setTotalQuestionsAnswered] = useState(0);
+  const [totalCorrectAnswers, setTotalCorrectAnswers] = useState(0);
+  const [currentAttempt, setCurrentAttempt] = useState(1);
+
+  // Track game start
+  useEffect(() => {
+    async function startGameTracking() {
+      gameStartTimeRef.current = new Date();
+
+      // Track game started event
+      await trackEvent('game_started', {
+        gameId: 'common_player',
+        gameName: 'Common Player Game',
+      });
+    }
+
+    startGameTracking();
+
+    // Track game end when component unmounts or user leaves
+    return () => {
+      if (gameStartTimeRef.current) {
+        const endTime = new Date();
+        const durationSeconds = (endTime - gameStartTimeRef.current) / 1000;
+
+        trackEvent('game_ended', {
+          gameId: 'common_player',
+          durationSeconds: durationSeconds.toFixed(2),
+          questionsAttempted: totalQuestionsAnswered,
+          questionsCorrect: totalCorrectAnswers,
+        });
+      }
+    };
+  }, [totalQuestionsAnswered, totalCorrectAnswers]);
+
+  // Track question changes and periodic session pings
+  useEffect(() => {
+    // Track new question started
+    questionStartTimeRef.current = new Date();
+    trackEvent('question_started', {
+      gameId: 'common_player',
+      questionIndex: currentIndex,
+    });
+
+    // Reset attempt counter for new question
+    setCurrentAttempt(1);
+
+    // Set up periodic session ping (every 30 seconds)
+    const pingInterval = setInterval(() => {
+      trackEvent('session_ping', {});
+    }, 30000);
+
+    return () => clearInterval(pingInterval);
+  }, [currentIndex]);
+
   useEffect(() => {
     async function fetchPlayers() {
       try {
@@ -73,23 +136,39 @@ function CommonPlayerGame() {
 	const handleSubmit = () => {
   const normalized = userAnswer.trim().toLowerCase();
   const correct = currentQuestion.answer.trim().toLowerCase();
-
   const wasCorrect = normalized === correct;
+
+  // Calculate time spent on this question
+  const timeSpentSeconds = questionStartTimeRef.current
+    ? (new Date() - questionStartTimeRef.current) / 1000
+    : 0;
+
+  // Track answer submission with all details
   trackEvent('answer_submitted', {
+    gameId: 'common_player',
+    gameSessionId: gameSessionId,
     questionIndex: currentIndex,
     userAnswer,
+    correctAnswer: currentQuestion.answer,
     isCorrect: wasCorrect,
+    attemptNumber: currentAttempt,
     attemptsLeft,
+    timeSpentSeconds: timeSpentSeconds.toFixed(2),
   });
 
   if (wasCorrect) {
     setIsCorrect(true);
+    setTotalQuestionsAnswered(prev => prev + 1);
+    setTotalCorrectAnswers(prev => prev + 1);
   } else {
     const newAttempts = attemptsLeft - 1;
     setAttemptsLeft(newAttempts);
     setIsCorrect(false);
+    setCurrentAttempt(prev => prev + 1);
+
     if (newAttempts === 0) {
-      // Optionally lock input if you want
+      // Question failed - still count as answered
+      setTotalQuestionsAnswered(prev => prev + 1);
     }
   }
 };
@@ -99,6 +178,8 @@ function CommonPlayerGame() {
 		setUserAnswer('');
 		setIsCorrect(null);
 		setAttemptsLeft(4);
+		setCurrentAttempt(1);
+		// Question timer will reset in the useEffect hook
 	};
 
 	// Add this function to handle share tracking
@@ -207,6 +288,28 @@ function CommonPlayerGame() {
 		>
 			Submit
 		</Button>
+
+		{isCorrect && (
+			<Button
+				variant="contained"
+				color="success"
+				onClick={handleNext}
+				sx={{
+					width: '150px',
+					backgroundColor: 'orange',
+					'&:hover': {
+						backgroundColor: 'darkorange',
+					},
+					borderRadius: '8px',
+					padding: '10px 20px',
+					fontSize: '16px',
+					fontWeight: 'bold',
+					color: 'white',
+				}}
+			>
+				Next Question
+			</Button>
+		)}
 			</Box>
 
 			<Typography sx={{ marginTop: 1, color: '#C0C0C0', fontSize: '20px', fontWeight: 'bold', WebkitTextStroke: '0.5px black' }}>
