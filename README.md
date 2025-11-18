@@ -6,6 +6,10 @@ A monorepo containing multiple NFL-themed games with a centralized PostgreSQL ba
 
 ```
 NFL-Teammates-Game/
+├── landing-page/                   # Main landing page / game selector
+│   ├── src/                       # React components
+│   ├── public/                    # Static assets & game thumbnails
+│   └── package.json               # Landing page dependencies
 ├── games/                          # All game applications
 │   ├── nfl-teammates-game/        # NFL Teammates guessing game
 │   ├── journeyman/                # Journeyman NFL player game
@@ -19,6 +23,21 @@ NFL-Teammates-Game/
 ├── package.json                    # Monorepo root package.json
 └── README.md                       # This file
 ```
+
+## 🏠 Landing Page
+
+The landing page serves as the main entry point for the NFL Games Hub, allowing users to select which game they want to play.
+
+**Features:**
+- Beautiful retro-arcade style interface with NFL branding
+- Game thumbnails with descriptions
+- Automatic music playback (Heavy Action theme)
+- Links to both local games and external deployments
+- Responsive design
+
+**Directory:** `landing-page/`
+**Tech Stack:** React (Create React App) with React Router
+**Default Port:** http://localhost:3002 (different from games to avoid conflicts)
 
 ## 🎮 Games
 
@@ -93,6 +112,9 @@ The backend serves all three games with a centralized PostgreSQL database contai
 
    Or install individually:
    ```bash
+   # Landing Page
+   cd landing-page && npm install
+
    # Backend
    cd backend && npm install
 
@@ -120,7 +142,36 @@ The backend serves all three games with a centralized PostgreSQL database contai
    npm run init-db
    ```
 
-### Running the Games
+### Running the Complete Hub (Recommended)
+
+For the full experience with the landing page game selector:
+
+```bash
+# Terminal 1: Start shared backend
+npm run start:backend
+
+# Terminal 2: Start landing page
+npm run start:landing
+
+# Terminal 3: Start NFL Teammates game
+npm run start:teammates
+
+# Terminal 4: Start Journeyman game (optional, on same port as teammates)
+# Only run one Create React App game at a time on port 3000
+
+# Terminal 5: Start NFL Trivia game
+npm run start:trivia
+```
+
+Then visit:
+- **Landing Page:** http://localhost:3002 (main entry point)
+- **NFL Teammates:** http://localhost:3000
+- **Journeyman:** http://localhost:3000 (run separately from teammates)
+- **NFL Trivia:** http://localhost:5173
+
+**Note:** The landing page runs on port 3002 to avoid conflicts with the games on port 3000.
+
+### Running Individual Games
 
 #### Option 1: Run NFL Teammates Game
 ```bash
@@ -159,7 +210,7 @@ Then visit: http://localhost:5173 (Vite default port)
 
 ### Root Level Scripts
 
-```bash
+npm run start:landing          # Start the landing page / game selector
 npm run start:backend          # Start the shared backend server
 npm run start:teammates        # Start NFL Teammates game
 npm run start:journeyman       # Start Journeyman game
@@ -169,10 +220,10 @@ npm run init-db                # Initialize the database
 npm run dev:teammates          # Run backend + teammates concurrently
 npm run dev:journeyman         # Run backend + journeyman concurrently
 npm run dev:trivia             # Run backend + trivia concurrently
+npm run build:landing          # Build landing page
 npm run build:teammates        # Build NFL Teammates game
 npm run build:journeyman       # Build Journeyman game
 npm run build:trivia           # Build NFL Trivia game
-```
 
 ### Backend Scripts
 

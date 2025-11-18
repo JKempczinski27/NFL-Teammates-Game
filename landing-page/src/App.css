@@ -1,0 +1,25 @@
+@font-face {
+  font-family: 'Supercharge';
+  src: url('./Supercharge3D.otf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.heist-container {
+  padding: 40px;
+  text-align: center;
+  color: white;
+  background-color: #0d1117;
+  min-height: 100vh;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.heist-container h1 {
+  font-size: 48px;
+  margin-bottom: 40px;
+}
+
+/* Example usage */
+.supercharge-text {
+  font-family: 'Supercharge3D.otf', sans-serif;
+}
