@@ -1,0 +1,28 @@
+{
+  "name": "nfl-games-hub-backend",
+  "version": "1.0.0",
+  "description": "Shared backend server for NFL Games Hub (Teammates & Journeyman)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "init-db": "node initDatabase.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "pg": "^8.16.0"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": [
+    "nfl",
+    "games",
+    "backend",
+    "postgresql",
+    "express"
+  ]
+}

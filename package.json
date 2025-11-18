@@ -1,5 +1,32 @@
 {
-  "dependencies": {
-    "pg": "^8.16.0"
+  "name": "nfl-games-hub",
+  "version": "1.0.0",
+  "description": "NFL Games Hub - A monorepo containing multiple NFL-themed games with shared backend",
+  "private": true,
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "start:teammates": "cd games/nfl-teammates-game && npm start",
+    "start:journeyman": "cd games/journeyman && npm start",
+    "install:all": "npm install && cd backend && npm install && cd ../games/nfl-teammates-game && npm install && cd ../journeyman && npm install",
+    "init-db": "cd backend && npm run init-db",
+    "dev:teammates": "npm run start:backend & npm run start:teammates",
+    "dev:journeyman": "npm run start:backend & npm run start:journeyman",
+    "build:teammates": "cd games/nfl-teammates-game && npm run build",
+    "build:journeyman": "cd games/journeyman && npm run build"
+  },
+  "keywords": [
+    "nfl",
+    "games",
+    "monorepo",
+    "react",
+    "postgresql"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JKempczinski27/NFL-Teammates-Game.git"
   }
 }
