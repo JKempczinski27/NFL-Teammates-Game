@@ -34,12 +34,6 @@ app.post('/api/player', async (req, res) => {
   }
 });
 
-// Example: Insert a tracking event into player_updated
-await pool.query(
-  'INSERT INTO player_updated (session_id, event_type, event_data, created_at) VALUES ($1, $2, $3, NOW())',
-  [sessionId, eventType, eventData]
-);
-
 // Test DB connection route
 app.get('/api/db-test', async (req, res) => {
   try {
@@ -50,8 +44,15 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// Mount routers
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
+
+const questionsRouter = require('./routes/questions')(pool);
+app.use('/api/questions', questionsRouter);
+
+const imagesRouter = require('./routes/images')(pool);
+app.use('/api/images', imagesRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
