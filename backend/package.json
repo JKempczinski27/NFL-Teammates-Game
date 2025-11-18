@@ -1,28 +1,40 @@
 {
   "name": "nfl-games-hub-backend",
-  "version": "1.0.0",
-  "description": "Shared backend server for NFL Games Hub (Teammates & Journeyman)",
+  "version": "2.0.0",
+  "description": "Horizontally scalable backend server for NFL Games Hub",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:cluster": "ENABLE_CLUSTERING=true node cluster.js",
     "dev": "node server.js",
+    "dev:cluster": "ENABLE_CLUSTERING=true node cluster.js",
     "init-db": "node initDatabase.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "docker:build": "docker build -t nfl-games-backend .",
+    "docker:run": "docker run -p 3001:3001 --env-file .env nfl-games-backend"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
-    "pg": "^8.16.0"
+    "express-rate-limit": "^7.1.5",
+    "pg": "^8.16.0",
+    "rate-limit-redis": "^4.2.0",
+    "redis": "^4.6.12"
   },
   "engines": {
-    "node": "18.x"
+    "node": ">=18.0.0"
   },
   "keywords": [
     "nfl",
     "games",
     "backend",
     "postgresql",
-    "express"
+    "express",
+    "redis",
+    "horizontal-scaling",
+    "load-balancing",
+    "caching",
+    "rate-limiting"
   ]
 }

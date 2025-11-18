@@ -8,13 +8,51 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
+// Import scaling modules (gracefully handle if not installed)
+let cache, rateLimiter;
+try {
+  cache = require('./cache');
+  rateLimiter = require('./rateLimiter');
+} catch (err) {
+  console.warn('⚠️  Scaling modules not available - run npm install to enable caching and rate limiting');
+  // Provide no-op fallbacks
+  cache = {
+    cacheMiddleware: () => (req, res, next) => next(),
+    invalidateCache: async () => {},
+    getStats: async () => ({ available: false })
+  };
+  rateLimiter = {
+    apiLimiter: (req, res, next) => next(),
+    readLimiter: (req, res, next) => next(),
+    writeLimiter: (req, res, next) => next(),
+    sessionLimiter: (req, res, next) => next()
+  };
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// PostgreSQL connection pool
+// Request ID middleware for distributed tracing
+app.use((req, res, next) => {
+  req.id = req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
+
+// PostgreSQL connection pool with optimized settings for horizontal scaling
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Connection pool optimization for high concurrency
+  max: parseInt(process.env.DB_POOL_MAX) || 20, // Max connections per instance
+  min: parseInt(process.env.DB_POOL_MIN) || 5,  // Min idle connections
+  idleTimeoutMillis: 30000, // Close idle connections after 30s
+  connectionTimeoutMillis: 5000, // Fail fast if can't connect
+  maxUses: 7500, // Recycle connections after 7500 uses to prevent memory leaks
+  // Statement timeout to prevent long-running queries
+  statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT) || 10000,
+  // Query timeout for failover
+  query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT) || 10000
 });
 
 // Test database connection on startup
@@ -56,8 +94,60 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    pid: process.pid
   });
+});
+
+// Detailed health check for load balancers
+app.get('/health/detailed', async (req, res) => {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    pid: process.pid,
+    memory: process.memoryUsage(),
+    cpu: process.cpuUsage()
+  };
+
+  // Check database connectivity
+  try {
+    await pool.query('SELECT 1');
+    health.database = { status: 'connected' };
+  } catch (err) {
+    health.database = { status: 'disconnected', error: err.message };
+    health.status = 'unhealthy';
+  }
+
+  // Check cache connectivity
+  health.cache = await cache.getStats();
+
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
+// Metrics endpoint for monitoring systems (Prometheus, Datadog, etc.)
+app.get('/metrics', async (req, res) => {
+  const metrics = {
+    timestamp: new Date().toISOString(),
+    process: {
+      pid: process.pid,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    },
+    database: {
+      pool: {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount
+      }
+    },
+    cache: await cache.getStats()
+  };
+
+  res.json(metrics);
 });
 
 app.get('/api/db-test', async (req, res) => {
@@ -80,8 +170,8 @@ app.get('/api/db-test', async (req, res) => {
 // PLAYER ENDPOINTS
 // ============================================================================
 
-// Get all players
-app.get('/api/players', async (req, res) => {
+// Get all players (with caching and rate limiting)
+app.get('/api/players', rateLimiter.readLimiter, cache.cacheMiddleware(120), async (req, res) => {
   try {
     const { limit = 100, offset = 0, search } = req.query;
 
@@ -113,8 +203,8 @@ app.get('/api/players', async (req, res) => {
   }
 });
 
-// Get player by ID
-app.get('/api/players/:id', async (req, res) => {
+// Get player by ID (with caching and rate limiting)
+app.get('/api/players/:id', rateLimiter.readLimiter, cache.cacheMiddleware(180), async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query('SELECT * FROM players WHERE id = $1', [id]);
@@ -149,8 +239,8 @@ app.get('/api/players/:id', async (req, res) => {
   }
 });
 
-// Add new player
-app.post('/api/players', async (req, res) => {
+// Add new player (with rate limiting and cache invalidation)
+app.post('/api/players', rateLimiter.writeLimiter, async (req, res) => {
   try {
     const { name, position, teams, years_active, image_url } = req.body;
 
@@ -167,6 +257,9 @@ app.post('/api/players', async (req, res) => {
        RETURNING *`,
       [name, position, teams, years_active, image_url]
     );
+
+    // Invalidate player cache
+    await cache.invalidateCache('cache:*/api/players*');
 
     res.status(201).json({
       success: true,
@@ -185,8 +278,8 @@ app.post('/api/players', async (req, res) => {
 // QUESTIONS ENDPOINTS
 // ============================================================================
 
-// Get random question
-app.get('/api/questions/random', async (req, res) => {
+// Get random question (with rate limiting)
+app.get('/api/questions/random', rateLimiter.apiLimiter, async (req, res) => {
   try {
     const { difficulty, category } = req.query;
 
@@ -241,8 +334,8 @@ app.get('/api/questions/random', async (req, res) => {
   }
 });
 
-// Create new question
-app.post('/api/questions', async (req, res) => {
+// Create new question (with rate limiting)
+app.post('/api/questions', rateLimiter.writeLimiter, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -300,8 +393,8 @@ app.post('/api/questions', async (req, res) => {
 // USER STATS ENDPOINTS
 // ============================================================================
 
-// Get user stats by session ID
-app.get('/api/stats/:sessionId', async (req, res) => {
+// Get user stats by session ID (with caching and rate limiting)
+app.get('/api/stats/:sessionId', rateLimiter.readLimiter, cache.cacheMiddleware(60), async (req, res) => {
   try {
     const { sessionId } = req.params;
     const result = await pool.query(
@@ -329,8 +422,8 @@ app.get('/api/stats/:sessionId', async (req, res) => {
   }
 });
 
-// Create or update user stats
-app.post('/api/stats', async (req, res) => {
+// Create or update user stats (with rate limiting and cache invalidation)
+app.post('/api/stats', rateLimiter.sessionLimiter, async (req, res) => {
   try {
     const {
       session_id,
@@ -361,6 +454,9 @@ app.post('/api/stats', async (req, res) => {
       [session_id, questions_answered, correct, incorrect, streak]
     );
 
+    // Invalidate stats cache for this session
+    await cache.del(`cache:/api/stats/${session_id}`);
+
     res.json({
       success: true,
       stats: result.rows[0]
@@ -378,8 +474,8 @@ app.post('/api/stats', async (req, res) => {
 // GAME-SPECIFIC ENDPOINTS (for Journeyman compatibility)
 // ============================================================================
 
-// Save player game session (Journeyman-style)
-app.post('/save-player', async (req, res) => {
+// Save player game session (Journeyman-style with rate limiting)
+app.post('/save-player', rateLimiter.sessionLimiter, async (req, res) => {
   try {
     const {
       name,
@@ -467,8 +563,8 @@ app.post('/api/game-data', async (req, res) => {
 // TEAMS ENDPOINTS
 // ============================================================================
 
-// Get all teams
-app.get('/api/teams', async (req, res) => {
+// Get all teams (heavily cached as teams rarely change)
+app.get('/api/teams', rateLimiter.readLimiter, cache.cacheMiddleware(3600), async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM teams ORDER BY name');
     res.json({

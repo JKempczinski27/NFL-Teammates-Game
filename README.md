@@ -299,6 +299,8 @@ npm run preview                # Preview production build
 
 ## 🏗️ Architecture
 
+### Basic Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                     Users/Players                        │
@@ -324,6 +326,102 @@ npm run preview                # Preview production build
                 │   (Railway hosted)  │
                 └─────────────────────┘
 ```
+
+### Horizontally Scaled Architecture
+
+```
+┌──────────────────────────────────────┐
+│          Users/Players               │
+└──────────────┬───────────────────────┘
+               │
+    ┌──────────▼──────────┐
+    │  Load Balancer      │  (NGINX/ALB)
+    │  (Port 80/443)      │
+    └──────────┬──────────┘
+               │
+    ┌──────────┼───────────────┐
+    │          │               │
+┌───▼────┐ ┌───▼────┐  ┌──────▼───┐
+│Backend1│ │Backend2│  │Backend N │  (Scale to N instances)
+│Node.js │ │Node.js │  │Node.js   │
+└───┬────┘ └───┬────┘  └────┬─────┘
+    │          │            │
+    └──────────┼────────────┘
+               │
+      ┌────────┴────────┐
+      │                 │
+  ┌───▼────┐     ┌──────▼─────┐
+  │ Redis  │     │ PostgreSQL │
+  │ Cache  │     │  Database  │
+  └────────┘     └────────────┘
+```
+
+## ⚡ Horizontal Scaling
+
+The backend is designed to scale horizontally to handle increased load. Key features:
+
+- **Stateless Backend**: Can run multiple instances simultaneously
+- **Redis Caching**: Distributed caching across all instances
+- **Rate Limiting**: Shared rate limiting via Redis
+- **Connection Pooling**: Optimized database connections
+- **Health Checks**: Load balancer-ready health endpoints
+- **Monitoring**: Built-in metrics and monitoring endpoints
+
+### Quick Start with Docker Compose
+
+Run 3 backend instances with load balancing:
+
+```bash
+# Start all services (3 backends + Redis + Postgres + NGINX)
+docker-compose up -d
+
+# Scale to 5 backend instances
+docker-compose up -d --scale backend=5
+
+# View status
+docker-compose ps
+
+# Access via load balancer
+curl http://localhost/health
+```
+
+### Capacity Planning
+
+| Configuration | Concurrent Users | Estimated Cost/Month |
+|--------------|-----------------|----------------------|
+| 1 instance | ~100-200 | $15-30 |
+| 3 instances (Docker Compose) | ~450-600 | $50-80 |
+| 5 instances | ~750-1,000 | $80-120 |
+| 10 instances | ~1,500-2,000 | $150-250 |
+
+### Scaling Options
+
+**Vertical Scaling** (Single Instance):
+```bash
+# Use Node.js clustering to utilize all CPU cores
+cd backend
+export ENABLE_CLUSTERING=true
+npm run start:cluster
+```
+
+**Horizontal Scaling** (Multiple Instances):
+```bash
+# Install dependencies for scaling
+cd backend
+npm install redis rate-limit-redis express-rate-limit
+
+# Set up Redis
+export REDIS_URL=redis://localhost:6379
+
+# Start multiple instances (in separate terminals or use Docker Compose)
+PORT=3001 npm start &
+PORT=3002 npm start &
+PORT=3003 npm start &
+
+# Configure load balancer (see backend/nginx.conf)
+```
+
+For detailed instructions, see [SCALING.md](./SCALING.md).
 
 ## 🌐 Deployment
 

@@ -1,0 +1,146 @@
+# Docker Compose for Horizontal Scaling
+# Run multiple backend instances with load balancing
+
+version: '3.8'
+
+services:
+  # Redis cache for distributed caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: nfl-games-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # PostgreSQL database (or use external managed database)
+  postgres:
+    image: postgres:15-alpine
+    container_name: nfl-games-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nfl_games}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # Backend instance 1
+  backend1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nfl-games-backend-1
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-nfl_games}
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: production
+      ENABLE_CLUSTERING: "false"  # Clustering handled by Docker scaling
+      DB_POOL_MAX: 10  # Reduced per instance since we have multiple instances
+      DB_POOL_MIN: 2
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Backend instance 2
+  backend2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nfl-games-backend-2
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-nfl_games}
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: production
+      ENABLE_CLUSTERING: "false"
+      DB_POOL_MAX: 10
+      DB_POOL_MIN: 2
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Backend instance 3
+  backend3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nfl-games-backend-3
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-nfl_games}
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: production
+      ENABLE_CLUSTERING: "false"
+      DB_POOL_MAX: 10
+      DB_POOL_MIN: 2
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # NGINX Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: nfl-games-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  nginx-logs:
+
+networks:
+  default:
+    name: nfl-games-network
