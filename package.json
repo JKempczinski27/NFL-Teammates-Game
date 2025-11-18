@@ -7,12 +7,15 @@
     "start:backend": "cd backend && npm start",
     "start:teammates": "cd games/nfl-teammates-game && npm start",
     "start:journeyman": "cd games/journeyman && npm start",
-    "install:all": "npm install && cd backend && npm install && cd ../games/nfl-teammates-game && npm install && cd ../journeyman && npm install",
+    "start:trivia": "cd games/nfl-trivia-game && npm run dev",
+    "install:all": "npm install && cd backend && npm install && cd ../games/nfl-teammates-game && npm install && cd ../journeyman && npm install && cd ../nfl-trivia-game && npm install",
     "init-db": "cd backend && npm run init-db",
     "dev:teammates": "npm run start:backend & npm run start:teammates",
     "dev:journeyman": "npm run start:backend & npm run start:journeyman",
+    "dev:trivia": "npm run start:backend & npm run start:trivia",
     "build:teammates": "cd games/nfl-teammates-game && npm run build",
-    "build:journeyman": "cd games/journeyman && npm run build"
+    "build:journeyman": "cd games/journeyman && npm run build",
+    "build:trivia": "cd games/nfl-trivia-game && npm run build"
   },
   "keywords": [
     "nfl",

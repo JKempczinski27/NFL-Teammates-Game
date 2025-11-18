@@ -8,7 +8,8 @@ A monorepo containing multiple NFL-themed games with a centralized PostgreSQL ba
 NFL-Teammates-Game/
 ├── games/                          # All game applications
 │   ├── nfl-teammates-game/        # NFL Teammates guessing game
-│   └── journeyman/                # Journeyman NFL player game
+│   ├── journeyman/                # Journeyman NFL player game
+│   └── nfl-trivia-game/           # NFL Trivia game with 3 difficulty modes
 ├── backend/                        # Shared backend API server
 │   ├── server.js                  # Main API server
 │   ├── schema.sql                 # Database schema
@@ -25,15 +26,28 @@ NFL-Teammates-Game/
 A game where players identify common teammates between NFL players.
 
 **Directory:** `games/nfl-teammates-game/`
+**Tech Stack:** React (Create React App)
 
 ### 2. Journeyman
 An NFL-themed player guessing game with comprehensive tracking and analytics.
 
 **Directory:** `games/journeyman/`
+**Tech Stack:** React (Create React App)
+
+### 3. NFL Trivia Game
+A comprehensive NFL trivia game featuring three difficulty modes:
+- **Hand-off** (Easy) - Basic NFL knowledge questions
+- **Check-Down** (Medium) - Intermediate trivia
+- **Long Drive** (Hard) - Advanced NFL history and stats
+
+Includes team selection, playmaker selection, and score tracking with social sharing capabilities.
+
+**Directory:** `games/nfl-trivia-game/`
+**Tech Stack:** React (Vite)
 
 ## 🗄️ Shared Backend
 
-The backend serves both games with a centralized PostgreSQL database containing:
+The backend serves all three games with a centralized PostgreSQL database containing:
 
 ### Database Tables:
 - **players** - NFL player information
@@ -87,6 +101,9 @@ The backend serves both games with a centralized PostgreSQL database containing:
 
    # Journeyman Game
    cd games/journeyman && npm install
+
+   # NFL Trivia Game
+   cd games/nfl-trivia-game && npm install
    ```
 
 3. **Set up environment variables:**
@@ -127,6 +144,17 @@ npm run start:journeyman
 
 Then visit: http://localhost:3000
 
+#### Option 3: Run NFL Trivia Game
+```bash
+# Terminal 1: Start backend
+npm run start:backend
+
+# Terminal 2: Start NFL Trivia game
+npm run start:trivia
+```
+
+Then visit: http://localhost:5173 (Vite default port)
+
 ## 📜 Available Scripts
 
 ### Root Level Scripts
@@ -135,10 +163,15 @@ Then visit: http://localhost:3000
 npm run start:backend          # Start the shared backend server
 npm run start:teammates        # Start NFL Teammates game
 npm run start:journeyman       # Start Journeyman game
+npm run start:trivia           # Start NFL Trivia game
 npm run install:all            # Install dependencies for all projects
 npm run init-db                # Initialize the database
+npm run dev:teammates          # Run backend + teammates concurrently
+npm run dev:journeyman         # Run backend + journeyman concurrently
+npm run dev:trivia             # Run backend + trivia concurrently
 npm run build:teammates        # Build NFL Teammates game
 npm run build:journeyman       # Build Journeyman game
+npm run build:trivia           # Build NFL Trivia game
 ```
 
 ### Backend Scripts
@@ -152,10 +185,17 @@ npm run init-db                # Initialize the database
 ### Game-Specific Scripts
 
 ```bash
+# For nfl-teammates-game and journeyman (Create React App)
 cd games/nfl-teammates-game    # or cd games/journeyman
 npm start                      # Start development server
 npm run build                  # Build for production
 npm test                       # Run tests
+
+# For nfl-trivia-game (Vite)
+cd games/nfl-trivia-game
+npm run dev                    # Start development server
+npm run build                  # Build for production
+npm run preview                # Preview production build
 ```
 
 ## 🔧 Development
@@ -188,29 +228,29 @@ npm test                       # Run tests
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Users/Players                   │
-└─────────────────────────────────────────────────┘
-                      │
-          ┌───────────┴───────────┐
-          │                       │
-    ┌─────▼─────┐          ┌─────▼─────┐
-    │ Teammates │          │ Journeyman│
-    │   Game    │          │   Game    │
-    │(React App)│          │(React App)│
-    └─────┬─────┘          └─────┬─────┘
-          │                       │
-          └───────────┬───────────┘
-                      │
-           ┌──────────▼──────────┐
-           │  Shared Backend API │
-           │   (Express + pg)    │
-           └──────────┬──────────┘
-                      │
-           ┌──────────▼──────────┐
-           │  PostgreSQL Database│
-           │   (Railway hosted)  │
-           └─────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                     Users/Players                        │
+└─────────────────────────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+    ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐
+    │ Teammates │   │ Journeyman│   │   Trivia  │
+    │   Game    │   │   Game    │   │   Game    │
+    │  (React)  │   │  (React)  │   │  (Vite)   │
+    └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+          │                │                │
+          └────────────────┼────────────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  Shared Backend API │
+                │   (Express + pg)    │
+                └──────────┬──────────┘
+                           │
+                ┌──────────▼──────────┐
+                │  PostgreSQL Database│
+                │   (Railway hosted)  │
+                └─────────────────────┘
 ```
 
 ## 🌐 Deployment
@@ -236,13 +276,17 @@ Each game can be deployed separately:
 - Build: `cd games/journeyman && npm run build`
 - Deploy the `build/` folder to your hosting service
 
+**NFL Trivia Game:**
+- Build: `cd games/nfl-trivia-game && npm run build`
+- Deploy the `dist/` folder to your hosting service
+
 Update the `FRONTEND_URL` environment variable in the backend to allow CORS.
 
 ## 🤝 Contributing
 
 1. Create a feature branch
 2. Make your changes
-3. Test with both games
+3. Test with all games to ensure compatibility
 4. Submit a pull request
 
 ## 📝 License
