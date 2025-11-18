@@ -13,7 +13,12 @@
     "load:peak": "artillery run tests/load/game-day-peak.yml",
     "load:spike": "artillery run tests/load/viral-spike.yml",
     "load:soak": "artillery run tests/load/soak-test.yml",
-    "load:all": "npm run load:baseline && npm run load:normal && npm run load:peak"
+    "load:superbowl:halftime": "artillery run tests/load/superbowl-halftime.yml",
+    "load:superbowl:fullgame": "artillery run tests/load/superbowl-full-game.yml",
+    "load:superbowl:stress": "artillery run tests/load/superbowl-stress-to-failure.yml",
+    "load:all": "npm run load:baseline && npm run load:normal && npm run load:peak",
+    "monitor:superbowl": "node tests/superbowl-monitor.js --duration 300000 --interval 2000",
+    "monitor:superbowl:extended": "node tests/superbowl-monitor.js --duration 1800000 --interval 3000"
   },
   "dependencies": {
     "cors": "^2.8.5",

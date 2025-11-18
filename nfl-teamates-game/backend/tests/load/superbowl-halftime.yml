@@ -1,0 +1,294 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    # Pre-game warmup (30 min before halftime)
+    - duration: 300  # 5 minutes pre-game warmup
+      arrivalRate: 500
+      rampTo: 2000
+      name: "Pre-game warmup - Building anticipation"
+
+    # Game traffic leading to halftime
+    - duration: 600  # 10 minutes sustained game traffic
+      arrivalRate: 2000
+      name: "Active game traffic"
+
+    # HALFTIME MEGA-SPIKE - First 5 minutes (THE CRITICAL MOMENT)
+    # Super Bowl halftime: 100-120M viewers, 30-40% go online = 30-48M users
+    # Simulating 200,000 concurrent users hitting simultaneously
+    - duration: 30  # Instant spike - everyone hits refresh
+      arrivalRate: 6000
+      name: "🔥 HALFTIME KICKOFF - Instant massive spike"
+
+    - duration: 270  # 4.5 minutes - peak sustained
+      arrivalRate: 6000
+      rampTo: 5000
+      name: "🔥 HALFTIME PEAK - Maximum sustained load (200K users)"
+
+    # Mid-halftime plateau
+    - duration: 600  # 10 minutes - halftime show continues
+      arrivalRate: 5000
+      rampTo: 3500
+      name: "Halftime plateau - Performance continues"
+
+    # Post-halftime show spike (second wave)
+    - duration: 300  # 5 minutes - people react/share
+      arrivalRate: 3500
+      rampTo: 4500
+      name: "Post-halftime reaction wave"
+
+    # Return to game traffic
+    - duration: 600  # 10 minutes - back to game
+      arrivalRate: 4500
+      rampTo: 2000
+      name: "Return to game traffic"
+
+    # Cooldown
+    - duration: 300  # 5 minutes cooldown
+      arrivalRate: 2000
+      rampTo: 500
+      name: "Cool down to baseline"
+
+  processor: "./processors/test-processor.js"
+
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+
+  # Relaxed thresholds for Super Bowl traffic
+  ensure:
+    maxErrorRate: 2  # Allow 2% error rate during peak
+    p95: 1000  # 95th percentile < 1s (relaxed for extreme load)
+    p99: 2000  # 99th percentile < 2s
+
+  http:
+    timeout: 30  # Extended timeout for extreme load
+
+  # Environment-specific settings
+  environments:
+    production:
+      target: "https://nfl-teammates-game-production.up.railway.app"
+      phases:
+        # Use full 200K user simulation
+        - duration: 300
+          arrivalRate: 6000
+
+    staging:
+      target: "https://staging.your-app.com"
+      phases:
+        # Reduced load for staging
+        - duration: 300
+          arrivalRate: 3000
+
+scenarios:
+  # MOBILE-HEAVY TRAFFIC (70% of Super Bowl users)
+  - name: "Mobile User - Quick Game Play"
+    weight: 35
+    flow:
+      - get:
+          url: "/"
+          headers:
+            User-Agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+          afterResponse: "captureSessionId"
+      - think: 1  # Mobile users are FAST during halftime
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              device: "mobile"
+              referrer: "nfl_app"
+              context: "superbowl_halftime"
+      - think: 2  # Quick play
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempt: 1
+              answer: "Brady"
+              device: "mobile"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              device: "mobile"
+              quickPlay: true
+
+  - name: "Mobile User - Social Share Frenzy"
+    weight: 25
+    flow:
+      - get:
+          url: "/"
+          headers:
+            User-Agent: "Mozilla/5.0 (Android; Mobile; rv:91.0) Gecko/91.0 Firefox/91.0"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              device: "mobile"
+      - think: 1  # Rapid-fire sharing
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "social_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platform: "twitter"
+              context: "superbowl_halftime"
+              hashtag: "#SuperBowl"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "social_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platform: "instagram"
+              context: "superbowl_halftime"
+
+  - name: "Mobile User - Instant Bounce (Network Congestion)"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          headers:
+            User-Agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)"
+          afterResponse: "captureSessionId"
+      - think: 0.5  # Impatient halftime user
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "bounce"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              reason: "slow_load"
+              device: "mobile"
+
+  # DESKTOP TRAFFIC (30% of Super Bowl users)
+  - name: "Desktop User - Power Engagement"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          headers:
+            User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              device: "desktop"
+              context: "superbowl_halftime"
+      - loop:
+        - think: 3
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "answer_submit"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                attempt: "{{ $loopCount }}"
+                device: "desktop"
+        count: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              device: "desktop"
+              attempts: 2
+      - think: 2
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "social_share"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                platform: "{{ $randomPlatform }}"
+                context: "superbowl_halftime"
+        count: 3
+
+  - name: "Desktop User - Multi-Tab Power User"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          headers:
+            User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "game_start"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 3
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "game_complete"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 1
+        count: 4
+
+  # VIRAL PARTICIPANT (5% - creates massive amplification)
+  - name: "Viral Amplifier - Celebrity/Influencer Pattern"
+    weight: 5
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "influencer_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              viral_potential: "high"
+              followers: "1M+"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "viral_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platforms: ["twitter", "instagram", "tiktok", "facebook"]
+              expected_reach: "500K+"
+              context: "superbowl_halftime"

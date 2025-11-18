@@ -1,0 +1,235 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    # PRE-GAME BUILD-UP (2 hours before kickoff)
+    - duration: 600  # 10 minutes simulating 2 hours pre-game
+      arrivalRate: 200
+      rampTo: 1000
+      name: "Pre-game buildup - Fans arriving"
+
+    # KICKOFF SPIKE (First major wave)
+    - duration: 180  # 3 minutes - kickoff moment
+      arrivalRate: 1000
+      rampTo: 3000
+      name: "⚡ Kickoff spike - First wave"
+
+    # FIRST QUARTER - High engagement
+    - duration: 900  # 15 minutes
+      arrivalRate: 3000
+      rampTo: 2500
+      name: "Q1 - High engagement"
+
+    # SECOND QUARTER - Building to halftime
+    - duration: 900  # 15 minutes
+      arrivalRate: 2500
+      rampTo: 4000
+      name: "Q2 - Building to halftime"
+
+    # TWO-MINUTE WARNING - Pre-halftime spike
+    - duration: 120  # 2 minutes
+      arrivalRate: 4000
+      rampTo: 5000
+      name: "⚡ Two-minute warning spike"
+
+    # 🔥🔥🔥 HALFTIME SHOW - MEGA SPIKE 🔥🔥🔥
+    # This is THE moment - 30-50 million users attempting access
+    - duration: 60  # 1 minute - INSTANT AVALANCHE
+      arrivalRate: 8000
+      name: "🔥🔥🔥 HALFTIME SHOW STARTS - MASSIVE SPIKE (240K users)"
+
+    - duration: 240  # 4 minutes - Peak sustained
+      arrivalRate: 8000
+      rampTo: 7000
+      name: "🔥 Halftime show peak performance"
+
+    - duration: 600  # 10 minutes - Mid halftime
+      arrivalRate: 7000
+      rampTo: 6000
+      name: "🔥 Halftime show continues"
+
+    - duration: 300  # 5 minutes - Show ending, reactions
+      arrivalRate: 6000
+      rampTo: 7500
+      name: "🔥 Halftime ending - Reaction wave"
+
+    # POST-HALFTIME SOCIAL FRENZY
+    - duration: 300  # 5 minutes - Everyone sharing opinions
+      arrivalRate: 7500
+      rampTo: 5000
+      name: "⚡ Post-halftime social media frenzy"
+
+    # THIRD QUARTER - Return to game
+    - duration: 900  # 15 minutes
+      arrivalRate: 5000
+      rampTo: 3500
+      name: "Q3 - Return to game traffic"
+
+    # FOURTH QUARTER - Excitement builds
+    - duration: 900  # 15 minutes
+      arrivalRate: 3500
+      rampTo: 5500
+      name: "Q4 - Close game excitement"
+
+    # FINAL TWO MINUTES - Game on the line
+    - duration: 120  # 2 minutes
+      arrivalRate: 5500
+      rampTo: 7000
+      name: "⚡ Final two minutes - Game deciding moments"
+
+    # GAME ENDING - Final spike
+    - duration: 300  # 5 minutes
+      arrivalRate: 7000
+      rampTo: 8000
+      name: "🏆 GAME ENDS - Championship decided"
+
+    # POST-GAME CELEBRATION/ANALYSIS
+    - duration: 900  # 15 minutes
+      arrivalRate: 8000
+      rampTo: 4000
+      name: "Post-game celebration and analysis"
+
+    # COOLDOWN
+    - duration: 600  # 10 minutes
+      arrivalRate: 4000
+      rampTo: 500
+      name: "Post-game cooldown"
+
+  processor: "./processors/test-processor.js"
+
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+      # Generate reports every 60 seconds during this long test
+      reportingPeriod: 60
+
+  ensure:
+    maxErrorRate: 2.5  # Allow 2.5% error rate during extreme peaks
+    p95: 1500  # 95th percentile < 1.5s
+    p99: 3000  # 99th percentile < 3s
+
+  http:
+    timeout: 30
+
+  # Performance monitoring
+  variables:
+    testType: "superbowl_full_game"
+    expectedPeakUsers: 240000
+    testDuration: "~2 hours"
+
+scenarios:
+  # Different user behaviors throughout the game
+
+  - name: "Casual Fan - Check Scores"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "casual_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              userType: "casual_fan"
+      - think: 3
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "quick_check"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Die-Hard Fan - Constant Engagement"
+    weight: 25
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "game_interaction"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                userType: "die_hard_fan"
+        - think: 2
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "answer_submit"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 3
+        count: 3
+
+  - name: "Social Sharer - Multiple Platforms"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - think: 1
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "social_share"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                platform: "{{ $randomPlatform }}"
+                context: "superbowl"
+        - think: 2
+        count: 4
+
+  - name: "Commercial Break Browser"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 5  # Watching commercials
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              timing: "commercial_break"
+      - think: 10
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Party Host - Quick Checks"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "quick_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              context: "party_hosting"

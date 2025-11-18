@@ -132,6 +132,70 @@ This document outlines a comprehensive testing strategy for the NFL Teammates Ga
 - **Request Rate**: ~3,000 req/sec
 - **Monitor**: Memory, CPU, connections, response times
 
+### Scenario 5: Super Bowl Halftime 🏈🔥
+- **Duration**: 60 minutes (full halftime sequence)
+- **Peak Load**: 200,000 concurrent users
+- **Request Rate**: ~60,000 req/sec peak
+- **Context**: THE ultimate traffic test - Super Bowl halftime
+- **Pattern**:
+  - Pre-game warmup (5 min): 500 → 2,000 users/sec
+  - Active game traffic (10 min): 2,000 users/sec sustained
+  - **HALFTIME MEGA-SPIKE** (5 min): 6,000 users/sec (200K concurrent)
+  - Halftime sustained (10 min): 5,000 users/sec
+  - Post-halftime reaction (5 min): 3,500 → 4,500 users/sec
+  - Return to game (10 min): 4,500 → 2,000 users/sec
+  - Cooldown (5 min): 2,000 → 500 users/sec
+
+- **User Behavior**:
+  - 70% mobile users (realistic Super Bowl behavior)
+  - 60% rapid engagement (< 2 second think times)
+  - 40% social sharing (Twitter, Instagram, TikTok)
+  - 10% instant bounce (network congestion simulation)
+
+- **Performance Targets (relaxed for extreme load)**:
+  - p95 response time: < 1000ms
+  - p99 response time: < 2000ms
+  - Error rate: < 2% (acceptable during peak)
+  - System must remain responsive
+  - Graceful degradation required
+
+### Scenario 6: Super Bowl Full Game
+- **Duration**: ~2 hours
+- **Simulates**: Complete Super Bowl experience
+- **Traffic Waves**:
+  1. Pre-game buildup: 200 → 1,000 users/sec
+  2. Kickoff spike: 1,000 → 3,000 users/sec
+  3. Q1-Q2: 2,500 → 4,000 users/sec
+  4. Two-minute warning: 4,000 → 5,000 users/sec
+  5. **HALFTIME EXPLOSION**: 8,000 users/sec (240K users)
+  6. Post-halftime: 7,500 → 5,000 users/sec
+  7. Q3-Q4: 3,500 → 5,500 users/sec
+  8. Final two minutes: 7,000 users/sec
+  9. Game end: 8,000 users/sec
+  10. Post-game: 4,000 users/sec cooldown
+
+- **Purpose**: Test system over extended period with multiple spikes
+- **Validates**: Recovery between peaks, sustained performance
+
+### Scenario 7: Super Bowl Stress-to-Failure
+- **Duration**: 45 minutes
+- **Purpose**: Find absolute breaking point
+- **Pattern**: Aggressive ramp to system failure
+  - Phase 1: 100 → 1,000 users/sec
+  - Phase 2: 1,000 → 5,000 users/sec (300K concurrent)
+  - Phase 3: 5,000 → 10,000 users/sec (450K concurrent)
+  - Phase 4: 10,000 → 15,000 users/sec (600K concurrent)
+  - Phase 5: 15,000 → 20,000 users/sec (750K concurrent)
+  - Phase 6: 20,000 → 25,000 users/sec (750K sustained)
+  - Recovery test: 25,000 → 5,000 users/sec
+
+- **Expected Outcome**: System will fail or degrade
+- **Objectives**:
+  - Identify exact failure point
+  - Measure recovery capability
+  - Find bottlenecks (database, memory, CPU, network)
+  - Test circuit breakers and fallbacks
+
 ## 5. User Flow Simulation
 
 ### Primary Flow (60% of users)
