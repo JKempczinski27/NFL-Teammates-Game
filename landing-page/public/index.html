@@ -24,7 +24,47 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <title>NFL Games Hub</title>
+
+    <!-- OneTrust Cookies Consent Notice -->
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
+            type="text/javascript"
+            charset="UTF-8"
+            data-domain-script="%REACT_APP_ONETRUST_DOMAIN_SCRIPT_ID%"></script>
+    <script type="text/javascript">
+      function OptanonWrapper() {
+        console.log("🍪 OneTrust consent loaded");
+
+        // Get active consent groups
+        const allowedGroups = window.OnetrustActiveGroups || "";
+        console.log("Active consent groups:", allowedGroups);
+
+        // Check consent for each category
+        const hasNecessary = allowedGroups.includes("C0001");  // Strictly Necessary
+        const hasAnalytics = allowedGroups.includes("C0002");  // Performance/Analytics
+        const hasFunctional = allowedGroups.includes("C0003"); // Functional
+        const hasTargeting = allowedGroups.includes("C0004");  // Targeting/Marketing
+
+        if (hasNecessary) {
+          console.log("✅ Necessary cookies consented");
+          window.canStartGame = true;
+        }
+
+        if (hasAnalytics) {
+          console.log("📊 Analytics cookies consented");
+          // Initialize analytics here when ready
+          // Example: gtag('config', 'GA_MEASUREMENT_ID');
+        }
+
+        if (hasFunctional) {
+          console.log("⚙️  Functional cookies consented");
+        }
+
+        if (hasTargeting) {
+          console.log("📣 Targeting cookies consented");
+        }
+      }
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

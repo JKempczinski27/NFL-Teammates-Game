@@ -18,10 +18,13 @@ NFL-Teammates-Game/
 │   ├── server.js                  # Main API server
 │   ├── schema.sql                 # Database schema
 │   ├── initDatabase.js            # Database initialization script
+│   ├── onetrust-config.js         # OneTrust shared configuration
+│   ├── useOneTrust.js             # OneTrust React hook
 │   ├── DATABASE.md                # Database documentation
 │   └── package.json               # Backend dependencies
 ├── package.json                    # Monorepo root package.json
-└── README.md                       # This file
+├── README.md                       # This file
+└── ONETRUST.md                     # OneTrust integration guide
 ```
 
 ## 🏠 Landing Page
@@ -34,6 +37,7 @@ The landing page serves as the main entry point for the NFL Games Hub, allowing 
 - Automatic music playback (Heavy Action theme)
 - Links to both local games and external deployments
 - Responsive design
+- OneTrust cookie consent integration
 
 **Directory:** `landing-page/`
 **Tech Stack:** React (Create React App) with React Router
@@ -130,12 +134,29 @@ The backend serves all three games with a centralized PostgreSQL database contai
 
 3. **Set up environment variables:**
 
-   Create `.env` file in the `backend/` directory:
+   **Backend:** Create `.env` file in the `backend/` directory:
    ```
    DATABASE_URL=postgresql://user:password@host:port/database
    PORT=3001
    NODE_ENV=development
    ```
+
+   **OneTrust (Optional):** For cookie consent management, create `.env` files for each application:
+
+   Copy the `.env.example` files and add your OneTrust Domain Script ID:
+   ```bash
+   # Landing page
+   cp landing-page/.env.example landing-page/.env
+
+   # Games
+   cp games/nfl-teammates-game/.env.example games/nfl-teammates-game/.env
+   cp games/journeyman/.env.example games/journeyman/.env
+   cp games/nfl-trivia-game/.env.example games/nfl-trivia-game/.env
+   ```
+
+   Then edit each `.env` file and replace `YOUR-DOMAIN-ID-HERE` with your actual OneTrust Domain Script ID.
+
+   **Note:** OneTrust is optional for development. Applications will work without it. See [ONETRUST.md](./ONETRUST.md) for detailed setup instructions.
 
 4. **Initialize the database:**
    ```bash

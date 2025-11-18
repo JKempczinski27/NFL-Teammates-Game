@@ -4,41 +4,47 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>NFL Trivia Game</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Limelight&display=swap" rel="stylesheet">
-    
+
     <!-- OneTrust Cookies Consent Notice -->
     <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
             type="text/javascript"
             charset="UTF-8"
-            data-domain-script="YOUR-DOMAIN-ID"></script>
+            data-domain-script="%VITE_ONETRUST_DOMAIN_SCRIPT_ID%"></script>
     <script type="text/javascript">
       function OptanonWrapper() {
-        console.log("Consent loaded ✅");
+        console.log("🍪 OneTrust consent loaded");
 
-        // Example: unlock gameplay if the user consented to at least necessary cookies
+        // Get active consent groups
         const allowedGroups = window.OnetrustActiveGroups || "";
+        console.log("Active consent groups:", allowedGroups);
 
-        const hasNecessary = allowedGroups.includes("C0001");
-        const hasAnalytics = allowedGroups.includes("C0002");
-        const hasMarketing = allowedGroups.includes("C0003");
+        // Check consent for each category
+        const hasNecessary = allowedGroups.includes("C0001");  // Strictly Necessary
+        const hasAnalytics = allowedGroups.includes("C0002");  // Performance/Analytics
+        const hasFunctional = allowedGroups.includes("C0003"); // Functional
+        const hasTargeting = allowedGroups.includes("C0004");  // Targeting/Marketing
 
         if (hasNecessary) {
-          console.log("✅ Necessary consent given – gameplay can be unlocked");
-          window.canStartGame = true; // Custom flag your React app can check
+          console.log("✅ Necessary cookies consented");
+          window.canStartGame = true;
         }
 
         if (hasAnalytics) {
-          console.log("📊 Loading analytics scripts...");
-          // e.g., initialize Google Analytics, Mixpanel, etc.
-          // gtag('config', 'GA_MEASUREMENT_ID');
+          console.log("📊 Analytics cookies consented");
+          // Initialize analytics here when ready
+          // Example: gtag('config', 'GA_MEASUREMENT_ID');
         }
 
-        if (hasMarketing) {
-          console.log("📣 Loading marketing scripts...");
-          // e.g., initialize Facebook Pixel or HubSpot
+        if (hasFunctional) {
+          console.log("⚙️  Functional cookies consented");
+        }
+
+        if (hasTargeting) {
+          console.log("📣 Targeting cookies consented");
         }
       }
     </script>
