@@ -1,0 +1,89 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    - duration: 60  # Instant spike to 25,000 users
+      arrivalRate: 500
+      name: "Viral spike - sudden traffic surge"
+    - duration: 600  # 10 minutes sustained
+      arrivalRate: 500
+      name: "Sustained viral traffic"
+    - duration: 300  # 5 minutes decline
+      arrivalRate: 500
+      rampTo: 50
+      name: "Traffic decline"
+  processor: "./processors/test-processor.js"
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+  ensure:
+    maxErrorRate: 2  # Allow 2% error during spike
+    p95: 1000  # Relaxed during spike
+  http:
+    timeout: 20
+
+scenarios:
+  - name: "Viral Traffic - Quick Play"
+    weight: 70
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              referrer: "twitter"
+              viral: true
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Social Media Influx"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "social_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platform: "twitter"
+
+  - name: "Instant Bounce"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "bounce"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"

@@ -1,0 +1,136 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    - duration: 300  # 5 minutes ramp-up
+      arrivalRate: 1
+      rampTo: 20
+      name: "Ramp up to baseline"
+    - duration: 1800  # 30 minutes sustained
+      arrivalRate: 20
+      name: "Sustained baseline load"
+  processor: "./processors/test-processor.js"
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+  ensure:
+    maxErrorRate: 1  # Max 1% error rate
+    p95: 300  # 95th percentile < 300ms
+    p99: 500  # 99th percentile < 500ms
+
+scenarios:
+  - name: "Primary User Flow - Play Game"
+    weight: 60
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 3  # User reads instructions
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      - think: 5  # User thinks about answer
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempt: 1
+              answer: "Brady"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempts: 1
+              correct: true
+
+  - name: "Quick Bounce Flow"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "bounce"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Power User Flow - Multiple Attempts"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 3
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempt: 1
+              answer: "Wrong"
+      - think: 4
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempt: 2
+              answer: "AlsoWrong"
+      - think: 5
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempt: 3
+              answer: "Brady"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "social_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platform: "twitter"
+
+  - name: "Database Registration Flow"
+    weight: 5
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 3
+      - post:
+          url: "/api/player"
+          json:
+            name: "{{ $randomString() }}"
+            email: "test{{ $randomNumber() }}@example.com"
+      - get:
+          url: "/api/db-test"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "player_registered"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
