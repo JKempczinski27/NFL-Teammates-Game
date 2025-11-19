@@ -1,0 +1,118 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    # Start from baseline
+    - duration: 180  # 3 minutes
+      arrivalRate: 100
+      rampTo: 1000
+      name: "Baseline warmup"
+
+    # Aggressive ramp to find limits
+    - duration: 300  # 5 minutes
+      arrivalRate: 1000
+      rampTo: 5000
+      name: "Aggressive ramp - Phase 1"
+
+    - duration: 300  # 5 minutes
+      arrivalRate: 5000
+      rampTo: 10000
+      name: "Aggressive ramp - Phase 2 (300K users)"
+
+    - duration: 300  # 5 minutes
+      arrivalRate: 10000
+      rampTo: 15000
+      name: "Aggressive ramp - Phase 3 (450K users)"
+
+    - duration: 300  # 5 minutes
+      arrivalRate: 15000
+      rampTo: 20000
+      name: "Aggressive ramp - Phase 4 (600K users)"
+
+    # Push to breaking point
+    - duration: 300  # 5 minutes
+      arrivalRate: 20000
+      rampTo: 25000
+      name: "⚠️ DANGER ZONE - Phase 5 (750K users)"
+
+    # Absolute maximum
+    - duration: 300  # 5 minutes
+      arrivalRate: 25000
+      name: "🔴 MAXIMUM LOAD - Finding failure point (750K sustained)"
+
+    # Recovery test
+    - duration: 300  # 5 minutes
+      arrivalRate: 25000
+      rampTo: 5000
+      name: "Recovery test - Can system recover?"
+
+    - duration: 300  # 5 minutes
+      arrivalRate: 5000
+      rampTo: 100
+      name: "Cooldown to baseline"
+
+  processor: "./processors/test-processor.js"
+
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+
+  # Very relaxed thresholds - we EXPECT failures
+  ensure:
+    maxErrorRate: 10  # Allow up to 10% errors (we're stress testing to failure)
+    p95: 5000  # 5 seconds
+    p99: 10000  # 10 seconds
+
+  http:
+    timeout: 60  # Very long timeout
+
+  variables:
+    testType: "stress_to_failure"
+    objective: "Find absolute breaking point"
+    expectedBehavior: "System should eventually fail or degrade"
+
+scenarios:
+  # Simpler scenarios for stress testing
+  - name: "Minimal Load - Health Check"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+
+  - name: "Light Tracking"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "stress_test"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Database Load"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/db-test"
+
+  - name: "Full User Flow"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"

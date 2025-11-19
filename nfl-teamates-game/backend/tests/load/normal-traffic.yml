@@ -1,0 +1,137 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    - duration: 300  # 5 minutes ramp-up
+      arrivalRate: 10
+      rampTo: 100
+      name: "Ramp up to normal traffic"
+    - duration: 1500  # 25 minutes sustained
+      arrivalRate: 100
+      name: "Sustained normal weekday traffic - 5,000 concurrent users"
+    - duration: 300  # 5 minutes cool-down
+      arrivalRate: 100
+      rampTo: 10
+      name: "Cool down"
+  processor: "./processors/test-processor.js"
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+  ensure:
+    maxErrorRate: 1  # Max 1% error rate
+    p95: 300  # 95th percentile < 300ms
+    p99: 500  # 99th percentile < 500ms
+  http:
+    timeout: 10
+
+scenarios:
+  - name: "Primary User Flow - Play Game Once"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              referrer: "direct"
+      - think: 4
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "answer_submit"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                attempt: "{{ $loopCount }}"
+                answer: "{{ $randomString() }}"
+        - think: 3
+        count: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              attempts: 2
+
+  - name: "Multiple Play Sessions"
+    weight: 25
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "game_start"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 3
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "answer_submit"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+              eventData:
+                answer: "Brady"
+        - think: 2
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "game_complete"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 5
+        count: 3
+
+  - name: "Quick Bounce"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "bounce"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              timeOnPage: 1
+
+  - name: "Social Share Flow"
+    weight: 15
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 3
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - think: 2
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "social_share"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              platform: "{{ $randomPlatform }}"
+      - think: 1
+      - get:
+          url: "/"

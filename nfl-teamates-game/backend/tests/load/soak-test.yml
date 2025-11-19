@@ -1,0 +1,110 @@
+config:
+  target: "https://nfl-teammates-game-production.up.railway.app"
+  phases:
+    - duration: 600  # 10 minutes ramp-up
+      arrivalRate: 10
+      rampTo: 200
+      name: "Ramp up for soak test"
+    - duration: 14400  # 4 hours sustained load
+      arrivalRate: 200
+      name: "Soak test - 4 hour sustained load at 10,000 users"
+    - duration: 600  # 10 minutes cool-down
+      arrivalRate: 200
+      rampTo: 10
+      name: "Cool down"
+  processor: "./processors/test-processor.js"
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+  ensure:
+    maxErrorRate: 0.5  # Low error rate for stability
+    p95: 300  # Consistent response times
+    p99: 500
+  http:
+    timeout: 10
+
+scenarios:
+  - name: "Standard User Flow"
+    weight: 50
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 3
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_view"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - think: 5
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "answer_submit"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+      - think: 3
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "game_complete"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+
+  - name: "Database Operations"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - post:
+          url: "/api/player"
+          json:
+            name: "SoakTest{{ $randomNumber() }}"
+            email: "soak{{ $randomNumber() }}@test.com"
+      - think: 1
+      - get:
+          url: "/api/db-test"
+      - think: 2
+
+  - name: "Continuous Activity"
+    weight: 20
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 2
+      - loop:
+        - post:
+            url: "/api/track"
+            json:
+              eventType: "activity"
+              sessionId: "{{ sessionId }}"
+              timestamp: "{{ $timestamp }}"
+        - think: 5
+        count: 5
+
+  - name: "Memory Leak Detection Flow"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          afterResponse: "captureSessionId"
+      - think: 1
+      - post:
+          url: "/api/track"
+          json:
+            eventType: "large_payload_test"
+            sessionId: "{{ sessionId }}"
+            timestamp: "{{ $timestamp }}"
+            eventData:
+              largeData: "{{ $randomString() }}{{ $randomString() }}{{ $randomString() }}"
+      - get:
+          url: "/api/db-test"
+      - post:
+          url: "/api/player"
+          json:
+            name: "MemTest{{ $timestamp }}"
+            email: "mem{{ $randomNumber() }}@test.com"
