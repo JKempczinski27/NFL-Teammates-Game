@@ -34,11 +34,16 @@ app.post('/api/player', async (req, res) => {
   }
 });
 
-// Example: Insert a tracking event into player_updated
-await pool.query(
-  'INSERT INTO player_updated (session_id, event_type, event_data, created_at) VALUES ($1, $2, $3, NOW())',
-  [sessionId, eventType, eventData]
-);
+// 🟡 Get all players
+app.get('/api/getPlayers', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM players ORDER BY created_at DESC');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching players:', err);
+    res.status(500).json({ error: 'Failed to fetch players' });
+  }
+});
 
 // Test DB connection route
 app.get('/api/db-test', async (req, res) => {
