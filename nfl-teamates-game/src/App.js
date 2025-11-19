@@ -59,6 +59,55 @@ function CommonPlayerGame() {
 	const [isCorrect, setIsCorrect] = useState(null);
 	const [attemptsLeft, setAttemptsLeft] = useState(4);
   const [players, setPlayers] = useState([]);
+  const [sessionStartTime, setSessionStartTime] = useState(Date.now());
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+
+  // Track session start
+  useEffect(() => {
+    trackEvent('session_start', {});
+    setSessionStartTime(Date.now());
+
+    // Track activity every 30 seconds
+    const activityInterval = setInterval(() => {
+      trackEvent('activity', {
+        timeElapsed: Math.floor((Date.now() - sessionStartTime) / 1000)
+      });
+    }, 30000); // 30 seconds
+
+    // Track session end on page unload
+    const handleBeforeUnload = () => {
+      const timeSpent = Math.floor((Date.now() - sessionStartTime) / 1000);
+      const completed = currentIndex >= gameData.length - 1 && isCorrect === true;
+
+      trackEvent('session_end', {
+        timeSpent,
+        completed,
+        questionsCompleted: currentIndex
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(activityInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
+    };
+  }, []);
+
+  // Track question views
+  useEffect(() => {
+    trackEvent('question_viewed', {
+      questionIndex: currentIndex
+    });
+    setQuestionStartTime(Date.now());
+  }, [currentIndex]);
+
+  // Track user activity
+  const trackActivity = () => {
+    setLastActivityTime(Date.now());
+  };
 
   // Tracking state
   const [gameSessionId, setGameSessionId] = useState(null);
@@ -136,6 +185,10 @@ function CommonPlayerGame() {
 	const handleSubmit = () => {
   const normalized = userAnswer.trim().toLowerCase();
   const correct = currentQuestion.answer.trim().toLowerCase();
+
+  // Calculate time spent on this question
+  const timeToAnswer = Math.floor((Date.now() - questionStartTime) / 1000);
+
   const wasCorrect = normalized === correct;
 
   // Calculate time spent on this question
@@ -153,7 +206,7 @@ function CommonPlayerGame() {
     isCorrect: wasCorrect,
     attemptNumber: currentAttempt,
     attemptsLeft,
-    timeSpentSeconds: timeSpentSeconds.toFixed(2),
+    timeToAnswer,
   });
 
   if (wasCorrect) {
@@ -167,8 +220,11 @@ function CommonPlayerGame() {
     setCurrentAttempt(prev => prev + 1);
 
     if (newAttempts === 0) {
-      // Question failed - still count as answered
-      setTotalQuestionsAnswered(prev => prev + 1);
+      // Track drop-off if user runs out of attempts
+      trackEvent('drop_off', {
+        questionIndex: currentIndex,
+        reason: 'out_of_attempts'
+      });
     }
   }
 };
@@ -184,7 +240,10 @@ function CommonPlayerGame() {
 
 	// Add this function to handle share tracking
 	function handleShare(platform) {
-		trackEvent('shared', { platform });
+		trackEvent('shared', {
+      platform,
+      questionIndex: currentIndex
+    });
 	}
 
 	return (

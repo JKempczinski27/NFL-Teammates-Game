@@ -6,6 +6,12 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 // Database connection pool
 const pool = new Pool({
@@ -20,47 +26,54 @@ const pool = new Pool({
  * Accepts various event types and saves them to appropriate tables
  */
 router.post('/', async (req, res) => {
+  const { eventType, eventData, sessionId, timestamp } = req.body;
+
+  if (!eventType || !sessionId) {
+    return res.status(400).json({ error: 'Missing required fields: eventType, sessionId' });
+  }
+
   const client = await pool.connect();
 
   try {
-    const { sessionId, eventType, eventData, timestamp, userAgent } = req.body;
+    // Always insert into main events table
+    await client.query(
+      'INSERT INTO events (session_id, event_type, event_data, timestamp) VALUES ($1, $2, $3, $4)',
+      [sessionId, eventType, eventData, timestamp || new Date()]
+    );
 
-    if (!sessionId || !eventType) {
-      return res.status(400).json({ error: 'sessionId and eventType are required' });
-    }
-
-    // Ensure user session exists
-    await ensureUserSession(client, sessionId, userAgent);
-
-    // Route to appropriate handler based on event type
+    // Handle specific event types with specialized tables
     switch (eventType) {
-      case 'game_started':
-        await handleGameStarted(client, sessionId, eventData, timestamp);
+      case 'session_start':
+        await handleSessionStart(client, sessionId, eventData);
         break;
 
-      case 'game_ended':
-        await handleGameEnded(client, sessionId, eventData, timestamp);
+      case 'session_end':
+        await handleSessionEnd(client, sessionId, eventData);
         break;
 
-      case 'question_started':
-        await handleQuestionStarted(client, sessionId, eventData, timestamp);
+      case 'question_viewed':
+        await handleQuestionViewed(client, sessionId, eventData);
         break;
 
       case 'answer_submitted':
-        await handleAnswerSubmitted(client, sessionId, eventData, timestamp);
+        await handleAnswerSubmitted(client, sessionId, eventData);
         break;
 
       case 'shared':
-        await handleShared(client, sessionId, eventData, timestamp);
+        await handleShare(client, sessionId, eventData);
         break;
 
-      case 'session_ping':
-        await handleSessionPing(client, sessionId, timestamp);
+      case 'activity':
+        await handleActivity(client, sessionId, eventData);
+        break;
+
+      case 'drop_off':
+        await handleDropOff(client, sessionId, eventData);
         break;
 
       default:
-        // Log unknown event types to engagement events
-        await logEngagementEvent(client, sessionId, eventType, eventData, timestamp);
+        // Generic events are already stored in events table
+        break;
     }
 
     res.status(200).json({ success: true });
@@ -72,240 +85,96 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * Ensure user session exists in database
- */
-async function ensureUserSession(client, sessionId, userAgent = null) {
-  const query = `
-    INSERT INTO user_sessions (session_id, user_agent, first_seen, last_seen)
-    VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    ON CONFLICT (session_id)
-    DO UPDATE SET
-      last_seen = CURRENT_TIMESTAMP,
-      updated_at = CURRENT_TIMESTAMP,
-      total_sessions = user_sessions.total_sessions + 1
-  `;
-  await client.query(query, [sessionId, userAgent]);
-}
-
-/**
- * Handle game_started event
- */
-async function handleGameStarted(client, sessionId, eventData, timestamp) {
-  const { gameId, gameName } = eventData;
-
-  const query = `
-    INSERT INTO game_sessions (session_id, game_id, game_name, started_at)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id
-  `;
-
-  const result = await client.query(query, [
-    sessionId,
-    gameId || 'common_player',
-    gameName || 'Common Player Game',
-    timestamp || new Date().toISOString(),
-  ]);
-
-  // Update user_sessions total games
+// Handler functions for specific event types
+async function handleSessionStart(client, sessionId, eventData) {
   await client.query(
-    'UPDATE user_sessions SET total_games_played = total_games_played + 1 WHERE session_id = $1',
+    `INSERT INTO user_sessions (session_id, started_at, last_activity_at)
+     VALUES ($1, NOW(), NOW())
+     ON CONFLICT (session_id) DO UPDATE
+     SET started_at = NOW(), last_activity_at = NOW()`,
     [sessionId]
   );
-
-  return result.rows[0].id;
 }
 
-/**
- * Handle game_ended event
- */
-async function handleGameEnded(client, sessionId, eventData, timestamp) {
-  const { gameSessionId, gameId, durationSeconds, questionsAttempted, questionsCorrect } = eventData;
+async function handleSessionEnd(client, sessionId, eventData) {
+  const { completed, timeSpent } = eventData || {};
 
-  const endTime = timestamp || new Date().toISOString();
-
-  // Find the most recent game session if gameSessionId not provided
-  let sessionIdToUpdate = gameSessionId;
-
-  if (!sessionIdToUpdate) {
-    const findQuery = `
-      SELECT id FROM game_sessions
-      WHERE session_id = $1 AND game_id = $2 AND ended_at IS NULL
-      ORDER BY started_at DESC
-      LIMIT 1
-    `;
-    const result = await client.query(findQuery, [sessionId, gameId || 'common_player']);
-
-    if (result.rows.length > 0) {
-      sessionIdToUpdate = result.rows[0].id;
-    }
-  }
-
-  if (sessionIdToUpdate) {
-    const updateQuery = `
-      UPDATE game_sessions
-      SET
-        ended_at = $1,
-        duration_seconds = $2,
-        questions_attempted = $3,
-        questions_correct = $4
-      WHERE id = $5
-    `;
-
-    await client.query(updateQuery, [
-      endTime,
-      durationSeconds,
-      questionsAttempted || 0,
-      questionsCorrect || 0,
-      sessionIdToUpdate,
-    ]);
-
-    // Update daily activity summary
-    await updateDailyActivity(client, sessionId, gameId, durationSeconds, questionsAttempted, questionsCorrect);
-  }
-}
-
-/**
- * Handle question_started event
- */
-async function handleQuestionStarted(client, sessionId, eventData, timestamp) {
-  // Store in engagement events for reference
-  await logEngagementEvent(client, sessionId, 'question_started', eventData, timestamp);
-}
-
-/**
- * Handle answer_submitted event
- */
-async function handleAnswerSubmitted(client, sessionId, eventData, timestamp) {
-  const {
-    gameId,
-    gameSessionId,
-    questionIndex,
-    userAnswer,
-    correctAnswer,
-    isCorrect,
-    attemptNumber,
-    attemptsLeft,
-    timeSpentSeconds,
-  } = eventData;
-
-  const query = `
-    INSERT INTO question_attempts (
-      session_id,
-      game_session_id,
-      game_id,
-      question_index,
-      user_answer,
-      correct_answer,
-      is_correct,
-      attempt_number,
-      attempts_remaining,
-      time_spent_seconds,
-      answered_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-  `;
-
-  await client.query(query, [
-    sessionId,
-    gameSessionId || null,
-    gameId || 'common_player',
-    questionIndex,
-    userAnswer,
-    correctAnswer || null,
-    isCorrect,
-    attemptNumber || 1,
-    attemptsLeft,
-    timeSpentSeconds || null,
-    timestamp || new Date().toISOString(),
-  ]);
-
-  // Update user_sessions stats
   await client.query(
-    `UPDATE user_sessions SET
-      total_questions_answered = total_questions_answered + 1,
-      total_correct_answers = total_correct_answers + CASE WHEN $2 THEN 1 ELSE 0 END
+    `UPDATE user_sessions
+     SET ended_at = NOW(),
+         completed = $2,
+         total_time_spent = $3,
+         last_activity_at = NOW()
      WHERE session_id = $1`,
-    [sessionId, isCorrect]
+    [sessionId, completed || false, timeSpent || 0]
   );
 }
 
-/**
- * Handle shared event
- */
-async function handleShared(client, sessionId, eventData, timestamp) {
-  await logEngagementEvent(client, sessionId, 'shared', eventData, timestamp);
-}
+async function handleQuestionViewed(client, sessionId, eventData) {
+  const { questionIndex } = eventData || {};
 
-/**
- * Handle session ping (periodic heartbeat)
- */
-async function handleSessionPing(client, sessionId, timestamp) {
   await client.query(
-    'UPDATE user_sessions SET last_seen = $1 WHERE session_id = $2',
-    [timestamp || new Date().toISOString(), sessionId]
+    `INSERT INTO user_sessions (session_id, questions_viewed, last_activity_at)
+     VALUES ($1, 1, NOW())
+     ON CONFLICT (session_id) DO UPDATE
+     SET questions_viewed = user_sessions.questions_viewed + 1,
+         last_activity_at = NOW()`,
+    [sessionId]
   );
 }
 
-/**
- * Log generic engagement event
- */
-async function logEngagementEvent(client, sessionId, eventType, eventData, timestamp) {
-  const query = `
-    INSERT INTO user_engagement_events (session_id, event_type, event_data, event_timestamp)
-    VALUES ($1, $2, $3, $4)
-  `;
+async function handleAnswerSubmitted(client, sessionId, eventData) {
+  const { questionIndex, userAnswer, isCorrect, attemptsLeft, timeToAnswer } = eventData || {};
 
-  await client.query(query, [
-    sessionId,
-    eventType,
-    JSON.stringify(eventData),
-    timestamp || new Date().toISOString(),
-  ]);
+  // Insert into question_analytics
+  await client.query(
+    `INSERT INTO question_analytics (session_id, question_index, is_correct, attempts_used, answer_given, time_to_answer)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [sessionId, questionIndex, isCorrect, 3 - (attemptsLeft || 0), userAnswer, timeToAnswer]
+  );
+
+  // Update session questions_answered count
+  await client.query(
+    `INSERT INTO user_sessions (session_id, questions_answered, last_activity_at)
+     VALUES ($1, 1, NOW())
+     ON CONFLICT (session_id) DO UPDATE
+     SET questions_answered = user_sessions.questions_answered + 1,
+         last_activity_at = NOW()`,
+    [sessionId]
+  );
 }
 
-/**
- * Update daily activity summary
- */
-async function updateDailyActivity(client, sessionId, gameId, durationSeconds, questionsAnswered, correctAnswers) {
-  const query = `
-    INSERT INTO daily_activity_summary (
-      session_id,
-      activity_date,
-      games_played,
-      questions_answered,
-      correct_answers,
-      total_time_seconds,
-      unique_games_played
-    )
-    VALUES ($1, CURRENT_DATE, 1, $2, $3, $4, ARRAY[$5]::TEXT[])
-    ON CONFLICT (session_id, activity_date)
-    DO UPDATE SET
-      games_played = daily_activity_summary.games_played + 1,
-      questions_answered = daily_activity_summary.questions_answered + $2,
-      correct_answers = daily_activity_summary.correct_answers + $3,
-      total_time_seconds = daily_activity_summary.total_time_seconds + $4,
-      unique_games_played = array_append(
-        CASE
-          WHEN $5 = ANY(daily_activity_summary.unique_games_played)
-          THEN daily_activity_summary.unique_games_played
-          ELSE array_append(daily_activity_summary.unique_games_played, $5)
-        END,
-        NULL
-      )
-  `;
+async function handleShare(client, sessionId, eventData) {
+  const { platform, questionIndex } = eventData || {};
 
-  await client.query(query, [
-    sessionId,
-    questionsAnswered || 0,
-    correctAnswers || 0,
-    durationSeconds || 0,
-    gameId || 'common_player',
-  ]);
+  await client.query(
+    'INSERT INTO share_analytics (session_id, platform, question_index) VALUES ($1, $2, $3)',
+    [sessionId, platform, questionIndex]
+  );
 }
 
-/**
- * GET endpoint to check if tracking is working
- */
+async function handleActivity(client, sessionId, eventData) {
+  await client.query(
+    `INSERT INTO user_sessions (session_id, last_activity_at)
+     VALUES ($1, NOW())
+     ON CONFLICT (session_id) DO UPDATE
+     SET last_activity_at = NOW()`,
+    [sessionId]
+  );
+}
+
+async function handleDropOff(client, sessionId, eventData) {
+  const { questionIndex } = eventData || {};
+
+  await client.query(
+    `UPDATE user_sessions
+     SET dropped_off_at_question = $2,
+         last_activity_at = NOW()
+     WHERE session_id = $1`,
+    [sessionId, questionIndex]
+  );
+}
+
 router.get('/', (req, res) => {
   res.json({
     status: 'operational',
