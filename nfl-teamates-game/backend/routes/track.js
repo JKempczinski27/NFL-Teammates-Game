@@ -1,5 +1,10 @@
-// filepath: /workspaces/NFL-Teammates-Game/nfl-teamates-game/backend/routes/track.js
+/**
+ * Comprehensive User Tracking Route
+ * Handles all tracking events and saves them to PostgreSQL database
+ */
+
 const express = require('express');
+const { Pool } = require('pg');
 const router = express.Router();
 const { Pool } = require('pg');
 require('dotenv').config();
@@ -8,6 +13,18 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Database connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+/**
+ * Main tracking endpoint
+ * Accepts various event types and saves them to appropriate tables
+ */
 router.post('/', async (req, res) => {
   const { eventType, eventData, sessionId, timestamp } = req.body;
 
@@ -159,7 +176,57 @@ async function handleDropOff(client, sessionId, eventData) {
 }
 
 router.get('/', (req, res) => {
-  res.send('Track endpoint is working!');
+  res.json({
+    status: 'operational',
+    message: 'Comprehensive tracking endpoint is active',
+    supportedEvents: [
+      'game_started',
+      'game_ended',
+      'question_started',
+      'answer_submitted',
+      'shared',
+      'session_ping',
+    ],
+  });
+});
+
+/**
+ * GET endpoint for analytics (optional - for debugging)
+ */
+router.get('/analytics/:sessionId', async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const { sessionId } = req.params;
+
+    // Get user summary
+    const userQuery = 'SELECT * FROM user_engagement_summary WHERE session_id = $1';
+    const userData = await client.query(userQuery, [sessionId]);
+
+    // Get session diversity
+    const diversityQuery = 'SELECT * FROM session_game_diversity WHERE session_id = $1';
+    const diversityData = await client.query(diversityQuery, [sessionId]);
+
+    // Get recent attempts
+    const attemptsQuery = `
+      SELECT * FROM question_attempts
+      WHERE session_id = $1
+      ORDER BY answered_at DESC
+      LIMIT 20
+    `;
+    const attemptsData = await client.query(attemptsQuery, [sessionId]);
+
+    res.json({
+      user: userData.rows[0] || null,
+      sessionDiversity: diversityData.rows,
+      recentAttempts: attemptsData.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;
