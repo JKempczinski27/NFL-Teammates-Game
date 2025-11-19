@@ -16,6 +16,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // 🟢 TEST route
 app.get('/', (req, res) => {
@@ -34,17 +35,6 @@ app.post('/api/player', async (req, res) => {
   }
 });
 
-// 🟡 Get all players
-app.get('/api/getPlayers', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM players ORDER BY created_at DESC');
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error fetching players:', err);
-    res.status(500).json({ error: 'Failed to fetch players' });
-  }
-});
-
 // Test DB connection route
 app.get('/api/db-test', async (req, res) => {
   try {
@@ -57,6 +47,9 @@ app.get('/api/db-test', async (req, res) => {
 
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
+
+const analyticsRouter = require('./routes/analytics');
+app.use('/api/analytics', analyticsRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
