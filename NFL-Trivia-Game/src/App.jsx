@@ -326,7 +326,7 @@ const TeamSelection = () => {
         score: yards,
       });
   
-      fetch(`${import.meta.env.VITE_API_URL}/api/players`, {
+      fetch(`${import.meta.env.VITE_API_URL}/api/trivia/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -565,7 +565,7 @@ const TeamSelection = () => {
                       setSelectedTeam(team);
 
                       // Save player data using the updated fetch call
-                      fetch(`${import.meta.env.VITE_API_URL}/api/players`, {
+                      fetch(`${import.meta.env.VITE_API_URL}/api/trivia/players`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

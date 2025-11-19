@@ -3,7 +3,7 @@
 
 class DataUploadService {
   constructor() {
-    this.apiBase = process.env.REACT_APP_API_URL || 'https://journeyman-production.up.railway.app';
+    this.apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8080';
     this.retryAttempts = 3;
     this.uploadQueue = [];
     this.isProcessingQueue = false;
@@ -25,7 +25,7 @@ class DataUploadService {
     });
 
     try {
-      const response = await this.makeRequest('/save-player', uploadData);
+      const response = await this.makeRequest('/api/journeyman/save-player', uploadData);
 
       if (response.success) {
         console.log('✅ Game data uploaded successfully:', response);
@@ -57,7 +57,7 @@ class DataUploadService {
     }));
 
     try {
-      const response = await this.makeRequest('/batch-upload', {
+      const response = await this.makeRequest('/api/journeyman/batch-upload', {
         sessions: enrichedSessions,
         batchSize: enrichedSessions.length,
         batchTimestamp: new Date().toISOString()
@@ -122,7 +122,7 @@ class DataUploadService {
   }
 
   async retryUpload(queueItem) {
-    return this.makeRequest('/save-player', queueItem.data);
+    return this.makeRequest('/api/journeyman/save-player', queueItem.data);
   }
 
   // Store failed uploads locally for manual retry
@@ -157,7 +157,7 @@ class DataUploadService {
       console.log(`🔄 Retrying ${failedUploads.length} failed uploads`);
 
       const retryPromises = failedUploads.map(item =>
-        this.makeRequest('/save-player', item.data)
+        this.makeRequest('/api/journeyman/save-player', item.data)
           .then(() => ({ success: true, item }))
           .catch(error => ({ success: false, item, error }))
       );
@@ -188,7 +188,7 @@ class DataUploadService {
   // Analytics export request
   async requestAnalyticsExport(startDate, endDate, gameType = 'journeyman') {
     try {
-      const response = await this.makeRequest('/export-analytics', {
+      const response = await this.makeRequest('/api/journeyman/export-analytics', {
         startDate,
         endDate,
         gameType,
@@ -207,7 +207,7 @@ class DataUploadService {
   // Get S3 status and recent files
   async getS3Status() {
     try {
-      const response = await fetch(`${this.apiBase}/s3/status`);
+      const response = await fetch(`${this.apiBase}/api/s3/status`);
       const data = await response.json();
       return data;
     } catch (error) {
@@ -219,7 +219,7 @@ class DataUploadService {
   // Download data from S3
   async downloadFromS3(key) {
     try {
-      const response = await fetch(`${this.apiBase}/s3/download/${encodeURIComponent(key)}`);
+      const response = await fetch(`${this.apiBase}/api/s3/download/${encodeURIComponent(key)}`);
       const data = await response.json();
       return data;
     } catch (error) {

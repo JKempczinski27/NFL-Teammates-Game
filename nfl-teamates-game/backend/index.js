@@ -247,6 +247,14 @@ app.use('/api/track', trackRouter);
 const s3ManagementRouter = require('./routes/s3-management');
 app.use('/api/s3', s3ManagementRouter);
 
+// NFL Trivia Game routes
+const triviaRouter = require('./routes/trivia');
+app.use('/api/trivia', triviaRouter);
+
+// Journeyman Game routes
+const journeymanRouter = require('./routes/journeyman');
+app.use('/api/journeyman', journeymanRouter);
+
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
   console.log(`📊 Database pool: ${pool.totalCount} connections`);
