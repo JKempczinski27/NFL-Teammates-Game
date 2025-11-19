@@ -16,6 +16,7 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 // 🟢 TEST route
 app.get('/', (req, res) => {

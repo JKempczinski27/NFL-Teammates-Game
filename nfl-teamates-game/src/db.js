@@ -1,11 +1,21 @@
-const { getPlayers } = require('../src/db');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-export default async function handler(req, res) {
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
+async function getPlayers() {
   try {
-    const players = await getPlayers();
-    res.status(200).json(players);
+    const result = await pool.query('SELECT * FROM players ORDER BY created_at DESC');
+    return result.rows;
   } catch (error) {
-    console.error('Error fetching players:', error);
-    res.status(500).json({ error: 'Failed to fetch players' });
+    console.error('Error fetching players from database:', error);
+    throw error;
   }
 }
+
+module.exports = { getPlayers, pool };
