@@ -1,11 +1,13 @@
 {
-    "build": {
-      "root": "server",
-      "builder": "NIXPACKS",
-      "buildCommand": "npm install"
-    },
-    "deploy": {
-      "startCommand": "npm start"
-    }
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd nfl-teamates-game/backend && npm install"
+  },
+  "deploy": {
+    "startCommand": "cd nfl-teamates-game/backend && npm start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
+}
   
