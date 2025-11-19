@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Limelight&display=swap" rel="stylesheet">
+    
+    <!-- OneTrust Cookies Consent Notice -->
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
+            type="text/javascript"
+            charset="UTF-8"
+            data-domain-script="YOUR-DOMAIN-ID"></script>
+    <script type="text/javascript">
+      function OptanonWrapper() {
+        console.log("Consent loaded ✅");
+
+        // Example: unlock gameplay if the user consented to at least necessary cookies
+        const allowedGroups = window.OnetrustActiveGroups || "";
+
+        const hasNecessary = allowedGroups.includes("C0001");
+        const hasAnalytics = allowedGroups.includes("C0002");
+        const hasMarketing = allowedGroups.includes("C0003");
+
+        if (hasNecessary) {
+          console.log("✅ Necessary consent given – gameplay can be unlocked");
+          window.canStartGame = true; // Custom flag your React app can check
+        }
+
+        if (hasAnalytics) {
+          console.log("📊 Loading analytics scripts...");
+          // e.g., initialize Google Analytics, Mixpanel, etc.
+          // gtag('config', 'GA_MEASUREMENT_ID');
+        }
+
+        if (hasMarketing) {
+          console.log("📣 Loading marketing scripts...");
+          // e.g., initialize Facebook Pixel or HubSpot
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
