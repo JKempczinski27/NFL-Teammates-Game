@@ -4,26 +4,22 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "jest --coverage --verbose",
-    "test:watch": "jest --watch",
-    "test:integration": "jest --testMatch='**/*.integration.test.js'",
-    "test:unit": "jest --testMatch='**/*.unit.test.js'",
-    "load:baseline": "artillery run tests/load/baseline.yml",
-    "load:normal": "artillery run tests/load/normal-traffic.yml",
-    "load:peak": "artillery run tests/load/game-day-peak.yml",
-    "load:spike": "artillery run tests/load/viral-spike.yml",
-    "load:soak": "artillery run tests/load/soak-test.yml",
-    "load:superbowl:halftime": "artillery run tests/load/superbowl-halftime.yml",
-    "load:superbowl:fullgame": "artillery run tests/load/superbowl-full-game.yml",
-    "load:superbowl:stress": "artillery run tests/load/superbowl-stress-to-failure.yml",
-    "load:all": "npm run load:baseline && npm run load:normal && npm run load:peak",
-    "monitor:superbowl": "node tests/superbowl-monitor.js --duration 300000 --interval 2000",
-    "monitor:superbowl:extended": "node tests/superbowl-monitor.js --duration 1800000 --interval 3000"
+    "init-db": "node initDatabase.js",
+    "test": "cross-env NODE_ENV=test jest --runInBand",
+    "test:watch": "cross-env NODE_ENV=test jest --watch --runInBand",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage --runInBand",
+    "test:unit": "cross-env NODE_ENV=test jest --testPathPattern=unit --runInBand",
+    "test:integration": "cross-env NODE_ENV=test jest --testPathPattern=integration --runInBand",
+    "test:load": "cross-env NODE_ENV=test jest --testPathPattern=load --runInBand",
+    "test:security": "cross-env NODE_ENV=test jest --testPathPattern=security --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.932.0",
+    "@aws-sdk/s3-request-presigner": "^3.932.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "multer": "^2.0.2",
     "pg": "^8.16.0"
   },
   "devDependencies": {
@@ -50,5 +46,12 @@
   },
   "engines": {
     "node": "18.x"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
   }
 }

@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFL Teammates Game - Analytics Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      color: #333;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .stat-subvalue {
+      color: #999;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .section {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    th {
+      background: #f8f9fa;
+      color: #666;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      color: #333;
+    }
+
+    .success-rate {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .success-rate.high {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .success-rate.medium {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .success-rate.low {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+
+    .refresh-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .refresh-btn:hover {
+      background: #5568d3;
+    }
+
+    .platform-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .platform-facebook { background: #4267B2; color: white; }
+    .platform-twitter { background: #1DA1F2; color: white; }
+    .platform-reddit { background: #FF4500; color: white; }
+    .platform-whatsapp { background: #25D366; color: white; }
+
+    .chart-bar {
+      background: #667eea;
+      height: 25px;
+      border-radius: 3px;
+      margin: 5px 0;
+      transition: width 0.3s ease;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+    }
+
+    .chart-row {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .chart-label {
+      min-width: 150px;
+      color: #666;
+    }
+
+    .chart-bar-container {
+      flex: 1;
+      background: #f0f0f0;
+      border-radius: 3px;
+      margin: 0 10px;
+    }
+
+    .chart-value {
+      min-width: 60px;
+      text-align: right;
+      color: #333;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🏈 NFL Teammates Game Analytics Dashboard</h1>
+      <p class="subtitle">Real-time tracking and analytics</p>
+    </div>
+
+    <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh Data</button>
+
+    <div id="dashboard-stats"></div>
+    <div id="question-difficulty"></div>
+    <div id="engagement-metrics"></div>
+    <div id="share-analytics"></div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    async function fetchAPI(endpoint) {
+      try {
+        const response = await fetch(`${API_BASE}${endpoint}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+      } catch (error) {
+        console.error(`Error fetching ${endpoint}:`, error);
+        return null;
+      }
+    }
+
+    function formatNumber(num) {
+      return num?.toLocaleString() || '0';
+    }
+
+    function formatDuration(seconds) {
+      if (!seconds) return '0s';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+
+    function getSuccessRateClass(rate) {
+      if (rate >= 70) return 'high';
+      if (rate >= 40) return 'medium';
+      return 'low';
+    }
+
+    async function loadDashboard() {
+      const data = await fetchAPI('/api/analytics/dashboard');
+      if (!data || !data.success) {
+        document.getElementById('dashboard-stats').innerHTML = '<div class="error">Failed to load dashboard data</div>';
+        return;
+      }
+
+      const stats = data.overview;
+      const html = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Events</div>
+            <div class="stat-value">${formatNumber(stats.total_events)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Unique Sessions</div>
+            <div class="stat-value">${formatNumber(stats.unique_sessions)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Answers</div>
+            <div class="stat-value">${formatNumber(stats.total_answers)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Shares</div>
+            <div class="stat-value">${formatNumber(stats.total_shares)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Completed Sessions</div>
+            <div class="stat-value">${formatNumber(stats.completed_sessions)}</div>
+            <div class="stat-subvalue">${((stats.completed_sessions / stats.unique_sessions) * 100).toFixed(1)}% completion rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg Session Duration</div>
+            <div class="stat-value">${formatDuration(stats.avg_session_duration)}</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('dashboard-stats').innerHTML = html;
+    }
+
+    async function loadQuestionDifficulty() {
+      const data = await fetchAPI('/api/analytics/question-difficulty');
+      if (!data || !data.success) {
+        document.getElementById('question-difficulty').innerHTML = '<div class="section"><div class="error">Failed to load question difficulty data</div></div>';
+        return;
+      }
+
+      let tableRows = '';
+      data.data.forEach(q => {
+        const successClass = getSuccessRateClass(q.success_rate_percentage);
+        tableRows += `
+          <tr>
+            <td>Question ${q.question_index + 1}</td>
+            <td>${formatNumber(q.total_attempts)}</td>
+            <td>${formatNumber(q.correct_answers)}</td>
+            <td><span class="success-rate ${successClass}">${q.success_rate_percentage}%</span></td>
+            <td>${q.avg_attempts_needed}</td>
+            <td>${formatDuration(q.avg_time_seconds)}</td>
+          </tr>
+        `;
+      });
+
+      const html = `
+        <div class="section">
+          <h2>📊 Question Difficulty Analysis</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Total Attempts</th>
+                <th>Correct Answers</th>
+                <th>Success Rate</th>
+                <th>Avg Attempts</th>
+                <th>Avg Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows || '<tr><td colspan="6">No data available</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
+      document.getElementById('question-difficulty').innerHTML = html;
+    }
+
+    async function loadEngagement() {
+      const data = await fetchAPI('/api/analytics/engagement');
+      if (!data || !data.success) {
+        document.getElementById('engagement-metrics').innerHTML = '<div class="section"><div class="error">Failed to load engagement data</div></div>';
+        return;
+      }
+
+      const overview = data.overview;
+      let dropOffRows = '';
+      data.drop_off_points.forEach(point => {
+        dropOffRows += `
+          <tr>
+            <td>Question ${point.question_index + 1}</td>
+            <td>${formatNumber(point.drop_off_count)}</td>
+          </tr>
+        `;
+      });
+
+      let timeDistChart = '';
+      if (data.time_distribution && data.time_distribution.length > 0) {
+        const maxCount = Math.max(...data.time_distribution.map(t => t.session_count));
+        data.time_distribution.forEach(t => {
+          const width = (t.session_count / maxCount) * 100;
+          timeDistChart += `
+            <div class="chart-row">
+              <div class="chart-label">${t.time_range}</div>
+              <div class="chart-bar-container">
+                <div class="chart-bar" style="width: ${width}%"></div>
+              </div>
+              <div class="chart-value">${t.session_count}</div>
+            </div>
+          `;
+        });
+      }
+
+      const html = `
+        <div class="section">
+          <h2>👥 User Engagement Metrics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Sessions</div>
+              <div class="stat-value">${formatNumber(overview.total_sessions)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Completion Rate</div>
+              <div class="stat-value">${overview.completion_rate_percentage}%</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Time Spent</div>
+              <div class="stat-value">${formatDuration(overview.avg_time_spent_seconds)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Avg Questions Viewed</div>
+              <div class="stat-value">${overview.avg_questions_viewed}</div>
+            </div>
+          </div>
+
+          ${timeDistChart ? `
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Session Duration Distribution</h3>
+            <div class="chart-container">${timeDistChart}</div>
+          ` : ''}
+
+          ${dropOffRows ? `
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Drop-off Points</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Question</th>
+                  <th>Drop-offs</th>
+                </tr>
+              </thead>
+              <tbody>${dropOffRows}</tbody>
+            </table>
+          ` : ''}
+        </div>
+      `;
+      document.getElementById('engagement-metrics').innerHTML = html;
+    }
+
+    async function loadShareAnalytics() {
+      const data = await fetchAPI('/api/analytics/share-analytics');
+      if (!data || !data.success) {
+        document.getElementById('share-analytics').innerHTML = '<div class="section"><div class="error">Failed to load share analytics</div></div>';
+        return;
+      }
+
+      let platformChart = '';
+      if (data.platform_totals && data.platform_totals.length > 0) {
+        const maxCount = Math.max(...data.platform_totals.map(p => p.share_count));
+        data.platform_totals.forEach(p => {
+          const width = (p.share_count / maxCount) * 100;
+          platformChart += `
+            <div class="chart-row">
+              <div class="chart-label">
+                <span class="platform-badge platform-${p.platform}">${p.platform}</span>
+              </div>
+              <div class="chart-bar-container">
+                <div class="chart-bar" style="width: ${width}%"></div>
+              </div>
+              <div class="chart-value">${p.share_count} (${p.percentage}%)</div>
+            </div>
+          `;
+        });
+      }
+
+      const html = `
+        <div class="section">
+          <h2>📱 Share Analytics</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total Shares</div>
+              <div class="stat-value">${formatNumber(data.summary?.total_shares)}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Most Popular Platform</div>
+              <div class="stat-value" style="font-size: 20px;">
+                <span class="platform-badge platform-${data.summary?.most_popular_platform}">${data.summary?.most_popular_platform || 'N/A'}</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Platforms Used</div>
+              <div class="stat-value">${formatNumber(data.summary?.platforms_used)}</div>
+            </div>
+          </div>
+
+          ${platformChart ? `
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Shares by Platform</h3>
+            <div class="chart-container">${platformChart}</div>
+          ` : '<p style="margin-top: 20px; color: #666;">No share data available yet</p>'}
+        </div>
+      `;
+      document.getElementById('share-analytics').innerHTML = html;
+    }
+
+    async function loadAllData() {
+      document.getElementById('dashboard-stats').innerHTML = '<div class="loading">Loading dashboard...</div>';
+      document.getElementById('question-difficulty').innerHTML = '<div class="loading">Loading question data...</div>';
+      document.getElementById('engagement-metrics').innerHTML = '<div class="loading">Loading engagement data...</div>';
+      document.getElementById('share-analytics').innerHTML = '<div class="loading">Loading share data...</div>';
+
+      await Promise.all([
+        loadDashboard(),
+        loadQuestionDifficulty(),
+        loadEngagement(),
+        loadShareAnalytics()
+      ]);
+    }
+
+    // Load data on page load
+    loadAllData();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadAllData, 30000);
+  </script>
+</body>
+</html>
