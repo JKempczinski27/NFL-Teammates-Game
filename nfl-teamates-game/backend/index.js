@@ -48,8 +48,9 @@ app.get('/api/db-test', async (req, res) => {
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
 
-const analyticsRouter = require('./routes/analytics');
-app.use('/api/analytics', analyticsRouter);
+// S3 Management routes
+const s3ManagementRouter = require('./routes/s3-management');
+app.use('/api/s3', s3ManagementRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
