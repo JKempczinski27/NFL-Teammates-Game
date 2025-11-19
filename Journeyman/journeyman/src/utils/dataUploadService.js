@@ -25,7 +25,7 @@ class DataUploadService {
     });
 
     try {
-      const response = await this.makeRequest('/save-player', uploadData);
+      const response = await this.makeRequest('/api/journeyman/save-player', uploadData);
 
       if (response.success) {
         console.log('✅ Game data uploaded successfully:', response);
@@ -57,7 +57,7 @@ class DataUploadService {
     }));
 
     try {
-      const response = await this.makeRequest('/batch-upload', {
+      const response = await this.makeRequest('/api/journeyman/batch-upload', {
         sessions: enrichedSessions,
         batchSize: enrichedSessions.length,
         batchTimestamp: new Date().toISOString()
@@ -122,7 +122,7 @@ class DataUploadService {
   }
 
   async retryUpload(queueItem) {
-    return this.makeRequest('/save-player', queueItem.data);
+    return this.makeRequest('/api/journeyman/save-player', queueItem.data);
   }
 
   // Store failed uploads locally for manual retry
@@ -157,7 +157,7 @@ class DataUploadService {
       console.log(`🔄 Retrying ${failedUploads.length} failed uploads`);
 
       const retryPromises = failedUploads.map(item =>
-        this.makeRequest('/save-player', item.data)
+        this.makeRequest('/api/journeyman/save-player', item.data)
           .then(() => ({ success: true, item }))
           .catch(error => ({ success: false, item, error }))
       );
@@ -188,7 +188,7 @@ class DataUploadService {
   // Analytics export request
   async requestAnalyticsExport(startDate, endDate, gameType = 'journeyman') {
     try {
-      const response = await this.makeRequest('/export-analytics', {
+      const response = await this.makeRequest('/api/journeyman/export-analytics', {
         startDate,
         endDate,
         gameType,
