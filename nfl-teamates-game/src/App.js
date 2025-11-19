@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
 import { getPlayers } from './db';
+import { LazyImage, optimizePlayerImageUrl } from './components/LazyImage';
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
@@ -261,10 +262,12 @@ function CommonPlayerGame() {
 				backgroundImage: 'url("https://www.transparenttextures.com/patterns/basketball.png")', // Optional: match your CSS
 			}}
 		>
-			<img
+			<LazyImage
 				src="https://static.www.nfl.com/image/upload/v1554321393/league/nvfr7ogywskqrfaiu38m.svg"
 				alt="NFL Logo"
-				style={{ width: 300, height: 250, marginBottom: 4 }}
+				width={300}
+				height={250}
+				style={{ marginBottom: 16 }}
 			/>
 			<Typography
   variant="h4"
@@ -282,18 +285,26 @@ function CommonPlayerGame() {
 			<Grid container spacing={2} justifyContent="center">
 				{currentQuestion.images.map((player, idx) => (
 					<Grid item key={idx}>
-						<Card sx={{ maxWidth: 200 }}>
-							<CardMedia
-								component="img"
-								image={player.src}
+						<Card sx={{ maxWidth: 200, minHeight: 280 }}>
+							<LazyImage
+								src={optimizePlayerImageUrl(player.src, 200)}
 								alt={player.name}
+								width={200}
+								height={200}
+								style={{ objectFit: 'cover' }}
 							/>
-							<Typography
-								variant="subtitle1"
-								sx={{ textAlign: 'center', padding: 1 }}
-							>
-								{player.name}
-							</Typography>
+							<CardContent>
+								<Typography
+									variant="subtitle1"
+									sx={{
+										textAlign: 'center',
+										fontWeight: 'bold',
+										color: 'text.primary'
+									}}
+								>
+									{player.name}
+								</Typography>
+							</CardContent>
 						</Card>
 					</Grid>
 				))}
