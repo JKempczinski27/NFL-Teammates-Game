@@ -105,6 +105,7 @@ app.use(compression({
 
 // Parse JSON bodies
 app.use(express.json());
+app.use(express.static('public'));
 
 // API Rate limiting - prevent abuse
 const apiLimiter = rateLimit({
@@ -219,30 +220,6 @@ app.post('/api/player', writeLimiter, async (req, res) => {
   }
 });
 
-// Get daily question (with caching - 24 hour cache)
-app.get('/api/daily-question', cacheMiddleware(86400), async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-
-    const result = await pool.query(
-      'SELECT * FROM daily_questions WHERE date = $1 LIMIT 1',
-      [today]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'No question available for today' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Error fetching daily question:', err);
-    if (process.env.SENTRY_DSN) {
-      Sentry.captureException(err);
-    }
-    res.status(500).json({ error: 'Error fetching daily question' });
-  }
-});
-
 // Test DB connection route
 app.get('/api/db-test', async (req, res) => {
   try {
@@ -266,45 +243,9 @@ app.get('/api/db-test', async (req, res) => {
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
 
-// Sentry error handler must be before any other error middleware and after all controllers
-if (process.env.SENTRY_DSN) {
-  app.use(Sentry.Handlers.errorHandler());
-}
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-
-  if (process.env.SENTRY_DSN) {
-    Sentry.captureException(err);
-  }
-
-  res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message,
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-
-  // Close database pool
-  await pool.end();
-
-  // Close Redis connection
-  if (redisClient) {
-    await redisClient.quit();
-  }
-
-  process.exit(0);
-});
+// S3 Management routes
+const s3ManagementRouter = require('./routes/s3-management');
+app.use('/api/s3', s3ManagementRouter);
 
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
