@@ -40,7 +40,8 @@ S3_BUCKET_NAME=[your bucket name]
 ### 3. Run Database Migrations
 
 ```bash
-railway run psql $DATABASE_URL -f nfl-teamates-game/backend/schema.sql
+railway run psql $DATABASE_URL -f backend/schema-consolidated.sql
+railway run psql $DATABASE_URL -f backend/schema-analytics.sql
 ```
 
 ### 4. Verify
@@ -63,7 +64,7 @@ curl https://your-app.up.railway.app/api/db-test
 2. New + → Web Service
 3. Connect repository: `NFL-Teammates-Game`
 4. Settings:
-   - **Root Directory**: `nfl-teamates-game/backend`
+   - **Root Directory**: `backend`
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
    - **Plan**: Free (or Starter)
@@ -149,13 +150,16 @@ The `schema.sql` file creates these tables:
 
 ```bash
 # Railway
-railway run psql $DATABASE_URL -f nfl-teamates-game/backend/schema.sql
+railway run psql $DATABASE_URL -f backend/schema-consolidated.sql
+railway run psql $DATABASE_URL -f backend/schema-analytics.sql
 
 # Render Shell
-psql $DATABASE_URL -f schema.sql
+psql $DATABASE_URL -f schema-consolidated.sql
+psql $DATABASE_URL -f schema-analytics.sql
 
 # Local psql (use external DB URL)
-psql "postgresql://user:pass@host:port/db" -f nfl-teamates-game/backend/schema.sql
+psql "postgresql://user:pass@host:port/db" -f backend/schema-consolidated.sql
+psql "postgresql://user:pass@host:port/db" -f backend/schema-analytics.sql
 ```
 
 **Verify tables:**
@@ -242,7 +246,9 @@ railway add --database redis
 - **Detailed Railway Guide**: See `RAILWAY_DEPLOY.md`
 - **Detailed Render Guide**: See `RENDER_DEPLOY.md`
 - **Database Setup**: See `DATABASE_SETUP_GUIDE.md`
-- **API Documentation**: See `nfl-teamates-game/backend/README.md`
+- **API Documentation**: See `backend/README-CONSOLIDATED.md`
+- **Analytics Guide**: See `ANALYTICS_GUIDE.md`
+- **Dashboard Guide**: See `DASHBOARD_GUIDE.md`
 
 ---
 
