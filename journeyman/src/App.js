@@ -19,7 +19,9 @@ import adobeAnalytics, {
   trackSocialShare,
   trackPlayerRegistration,
   trackGameQuit,
-  trackGameComplete as trackAdobeGameComplete
+  trackGameStart,
+  trackGameComplete,
+  trackGuess
 } from './utils/adobeAnalytics';
 import ADOBE_CONFIG from './config/adobeConfig';
 import dataUploadService, { uploadGameData, getS3Status } from './utils/dataUploadService';
@@ -417,6 +419,72 @@ export default function App() {
         );
     };
 
+    // Handler functions
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+
+        // Validate form
+        if (!playerName.trim()) {
+            setFormError('Please enter your name');
+            return;
+        }
+
+        if (!playerEmail.trim()) {
+            setFormError('Please enter your email');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(playerEmail)) {
+            setFormError('Please enter a valid email address');
+            return;
+        }
+
+        // Clear error and track registration
+        setFormError('');
+        trackPlayerRegistration(playerName, playerEmail);
+
+        // Set user identity in AEP
+        setUserIdentity({ name: playerName, email: playerEmail });
+
+        // Move to landing page
+        setPage('landing');
+    };
+
+    const handleModeSelection = (mode) => {
+        const isChallenge = mode === 'challenge';
+        setChallengeMode(isChallenge);
+
+        // Track mode selection
+        trackModeSelection(playerName, mode);
+
+        // Move to game page
+        setPage('game');
+    };
+
+    const endGame = async () => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        setDurationInSeconds(duration);
+        setGameEnded(true);
+
+        // Track game quit
+        trackGameQuit({
+            playerName: playerName,
+            mode: challengeMode ? 'challenge' : 'easy',
+            correctCount: correctCount,
+            durationInSeconds: duration,
+            guesses: guesses
+        });
+
+        // Send game data to backend
+        try {
+            await sendGameData(duration);
+        } catch (error) {
+            console.error('Failed to send game data:', error);
+        }
+    };
+
     // Player info form page
     if (page === 'playerForm') {
         return (
@@ -477,6 +545,7 @@ export default function App() {
                         Start
                     </Button>
                 </Box>
+                <PrivacyConsent />
             </Box>
         );
     }
