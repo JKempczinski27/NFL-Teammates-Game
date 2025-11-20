@@ -4,6 +4,7 @@ import { Grid, Button, Typography, Card, CardContent, Avatar, Box, TextField } f
 import { IoLogoFacebook, IoLogoTwitter } from 'react-icons/io';
 import html2canvas from 'html2canvas';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import PrivacyConsent from './components/PrivacyConsent';
 
 
 const nflTeams = [
@@ -157,39 +158,6 @@ const teamLogos = {
 
 
 const TeamSelection = () => {
-  const [consentGiven, setConsentGiven] = useState(false);
-
-  useEffect(() => {
-    const checkConsentGate = () => {
-      if (window.canStartGame) {
-        setConsentGiven(true);
-      }
-    };
-
-    if (window.OptanonActiveGroups) {
-      checkConsentGate();
-    } else {
-      window.OptanonWrapper = checkConsentGate;
-    }
-  }, []);
-
-  if (!consentGiven) {
-    return (
-      <Box
-        sx={{
-          textAlign: 'center',
-          bgcolor: '#013369',
-          color: 'white',
-          padding: 4,
-          minHeight: '100vh',
-          minWidth: '100vw',
-        }}
-      >
-        <Typography variant="h4">Waiting for Cookie Consent...</Typography>
-      </Box>
-    );
-  }
-
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedPlaymaker, setSelectedPlaymaker] = useState(null);
   const [difficulty, setDifficulty] = useState(null);
@@ -544,6 +512,7 @@ const TeamSelection = () => {
       </ul>
       </Box>
       )}
+      <PrivacyConsent />
       </Box>
     );
   }
