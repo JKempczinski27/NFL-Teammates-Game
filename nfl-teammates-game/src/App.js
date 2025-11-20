@@ -3,7 +3,6 @@ import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
-import { getPlayers } from './db';
 import { LazyImage, optimizePlayerImageUrl } from './components/LazyImage';
 
 function getSessionId() {
@@ -171,7 +170,8 @@ function CommonPlayerGame() {
   useEffect(() => {
     async function fetchPlayers() {
       try {
-        const data = await getPlayers();
+        const response = await fetch('/api/players');
+        const data = await response.json();
         setPlayers(data);
       } catch (error) {
         console.error('Error fetching players:', error);
