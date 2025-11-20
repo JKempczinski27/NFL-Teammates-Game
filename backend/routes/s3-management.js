@@ -13,6 +13,18 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { s3Client, BUCKET_NAME } = require('../config/s3');
 const { authenticate } = require('../middleware/auth');
+const {
+  GAME_TYPES,
+  ASSET_CATEGORIES,
+  generateS3Key,
+  generatePlayerImageKey,
+  generateTeamLogoKey,
+  generateQuestionImageKey,
+  generateBadgeKey,
+  getFolderPrefix,
+  isValidFileType,
+  sanitizeFilename
+} = require('../config/s3-helpers');
 
 // Configure multer for memory storage
 const upload = multer({
@@ -377,6 +389,320 @@ router.get('/files/:key(*)/metadata', async (req, res) => {
   } catch (error) {
     console.error('Error getting file metadata:', error);
     res.status(500).json({ error: 'Failed to get file metadata', details: error.message });
+  }
+});
+
+// ============================================
+// GAME-SPECIFIC UPLOAD ENDPOINTS
+// ============================================
+
+// 🎮 Upload player image (any game)
+router.post('/upload-player', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { playerName, gameType } = req.body;
+
+    if (!playerName || !gameType) {
+      return res.status(400).json({ error: 'playerName and gameType are required' });
+    }
+
+    if (!Object.values(GAME_TYPES).includes(gameType)) {
+      return res.status(400).json({ error: 'Invalid gameType' });
+    }
+
+    // Validate file type
+    if (!isValidFileType(req.file.mimetype, ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])) {
+      return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG, WebP allowed.' });
+    }
+
+    const key = generatePlayerImageKey(playerName, gameType, { addTimestamp: true });
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    await s3Client.send(command);
+
+    const getCommand = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+
+    res.json({
+      message: 'Player image uploaded successfully',
+      key: key,
+      size: req.file.size,
+      url: url,
+      playerName: playerName,
+      gameType: gameType
+    });
+  } catch (error) {
+    console.error('Error uploading player image:', error);
+    res.status(500).json({ error: 'Failed to upload player image', details: error.message });
+  }
+});
+
+// 🏈 Upload team logo (any game)
+router.post('/upload-team', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { teamName, gameType } = req.body;
+
+    if (!teamName || !gameType) {
+      return res.status(400).json({ error: 'teamName and gameType are required' });
+    }
+
+    if (!Object.values(GAME_TYPES).includes(gameType)) {
+      return res.status(400).json({ error: 'Invalid gameType' });
+    }
+
+    // Validate file type (prefer PNG for logos)
+    if (!isValidFileType(req.file.mimetype, ['image/png', 'image/svg+xml'])) {
+      return res.status(400).json({ error: 'Invalid file type. Only PNG or SVG allowed for logos.' });
+    }
+
+    const key = generateTeamLogoKey(teamName, gameType);
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    await s3Client.send(command);
+
+    const getCommand = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+
+    res.json({
+      message: 'Team logo uploaded successfully',
+      key: key,
+      size: req.file.size,
+      url: url,
+      teamName: teamName,
+      gameType: gameType
+    });
+  } catch (error) {
+    console.error('Error uploading team logo:', error);
+    res.status(500).json({ error: 'Failed to upload team logo', details: error.message });
+  }
+});
+
+// ❓ Upload trivia question image
+router.post('/upload-question', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { questionId } = req.body;
+
+    if (!questionId) {
+      return res.status(400).json({ error: 'questionId is required' });
+    }
+
+    // Validate file type
+    if (!isValidFileType(req.file.mimetype, ['image/jpeg', 'image/jpg', 'image/png'])) {
+      return res.status(400).json({ error: 'Invalid file type. Only JPEG, PNG allowed.' });
+    }
+
+    const key = generateQuestionImageKey(questionId);
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    await s3Client.send(command);
+
+    const getCommand = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+
+    res.json({
+      message: 'Question image uploaded successfully',
+      key: key,
+      size: req.file.size,
+      url: url,
+      questionId: questionId
+    });
+  } catch (error) {
+    console.error('Error uploading question image:', error);
+    res.status(500).json({ error: 'Failed to upload question image', details: error.message });
+  }
+});
+
+// 🏆 Upload badge/achievement image
+router.post('/upload-badge', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { badgeName, gameType } = req.body;
+
+    if (!badgeName || !gameType) {
+      return res.status(400).json({ error: 'badgeName and gameType are required' });
+    }
+
+    if (!Object.values(GAME_TYPES).includes(gameType)) {
+      return res.status(400).json({ error: 'Invalid gameType' });
+    }
+
+    // Validate file type (prefer PNG for badges)
+    if (!isValidFileType(req.file.mimetype, ['image/png'])) {
+      return res.status(400).json({ error: 'Invalid file type. Only PNG allowed for badges.' });
+    }
+
+    const key = generateBadgeKey(badgeName, gameType);
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    await s3Client.send(command);
+
+    const getCommand = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key });
+    const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+
+    res.json({
+      message: 'Badge uploaded successfully',
+      key: key,
+      size: req.file.size,
+      url: url,
+      badgeName: badgeName,
+      gameType: gameType
+    });
+  } catch (error) {
+    console.error('Error uploading badge:', error);
+    res.status(500).json({ error: 'Failed to upload badge', details: error.message });
+  }
+});
+
+// 📁 List files by game type
+router.get('/files/:gameType', async (req, res) => {
+  try {
+    const { gameType } = req.params;
+    const { category, maxKeys = 1000 } = req.query;
+
+    if (!Object.values(GAME_TYPES).includes(gameType)) {
+      return res.status(400).json({ error: 'Invalid gameType' });
+    }
+
+    const prefix = getFolderPrefix(gameType, category);
+
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+      MaxKeys: parseInt(maxKeys),
+    });
+
+    const response = await s3Client.send(command);
+
+    const files = await Promise.all(
+      (response.Contents || []).map(async (item) => {
+        const getCommand = new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: item.Key,
+        });
+        const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+
+        return {
+          key: item.Key,
+          size: item.Size,
+          lastModified: item.LastModified,
+          url: url,
+        };
+      })
+    );
+
+    res.json({
+      gameType,
+      category: category || 'all',
+      files,
+      count: files.length,
+      isTruncated: response.IsTruncated || false,
+    });
+  } catch (error) {
+    console.error('Error listing files:', error);
+    res.status(500).json({ error: 'Failed to list files', details: error.message });
+  }
+});
+
+// 📊 Get stats by game type
+router.get('/stats/:gameType', async (req, res) => {
+  try {
+    const { gameType } = req.params;
+
+    if (!Object.values(GAME_TYPES).includes(gameType)) {
+      return res.status(400).json({ error: 'Invalid gameType' });
+    }
+
+    const prefix = getFolderPrefix(gameType);
+
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+    });
+
+    let totalSize = 0;
+    let totalFiles = 0;
+    let fileTypes = {};
+    let categoryCounts = {};
+    let continuationToken = null;
+
+    do {
+      if (continuationToken) {
+        command.input.ContinuationToken = continuationToken;
+      }
+
+      const response = await s3Client.send(command);
+
+      if (response.Contents) {
+        totalFiles += response.Contents.length;
+
+        response.Contents.forEach((item) => {
+          totalSize += item.Size;
+
+          // Track file types
+          const ext = item.Key.split('.').pop().toLowerCase();
+          fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+
+          // Track categories
+          const parts = item.Key.split('/');
+          if (parts.length >= 2) {
+            const category = parts[1];
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+          }
+        });
+      }
+
+      continuationToken = response.IsTruncated ? response.NextContinuationToken : null;
+    } while (continuationToken);
+
+    res.json({
+      gameType,
+      totalFiles,
+      totalSize,
+      totalSizeFormatted: formatBytes(totalSize),
+      fileTypes,
+      categoryCounts,
+    });
+  } catch (error) {
+    console.error('Error getting stats:', error);
+    res.status(500).json({ error: 'Failed to get stats', details: error.message });
   }
 });
 
