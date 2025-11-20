@@ -9,7 +9,8 @@ const PlayerForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('https://your-backend.up.railway.app/save-player', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/journeyman/save-player`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(gameData),

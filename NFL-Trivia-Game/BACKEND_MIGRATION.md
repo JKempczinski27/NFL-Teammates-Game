@@ -1,109 +1,143 @@
 # NFL Trivia Game - Backend Migration Guide
 
-This guide explains how to migrate the NFL Trivia Game frontend to use the consolidated backend.
+The backend for NFL Trivia Game has been consolidated into the main NFL Teammates Game backend.
 
-## Quick Start
+## What Changed
 
-### 1. Environment Configuration
+### Old Backend Location
+- `NFL-Trivia-Game/server/` (deprecated)
+- `NFL-Trivia-Game/long-drive-backend/` (deprecated)
 
-Create a `.env` file in the `NFL-Trivia-Game` directory:
+### New Backend Location
+- `nfl-teamates-game/backend/`
+- Routes: `nfl-teamates-game/backend/routes/trivia.js`
 
-```bash
-VITE_API_URL=your-backend-url
+## API Endpoint Changes
+
+### Old Endpoints
+```
+POST /api/players
+GET /api/players
 ```
 
-**Examples:**
-- Local development: `VITE_API_URL=http://localhost:8080`
-- Production (Railway): `VITE_API_URL=https://your-app.railway.app`
-- Production (Render): `VITE_API_URL=https://your-app.onrender.com`
+### New Endpoints
+```
+POST /api/trivia/players
+GET /api/trivia/players
+GET /api/trivia/leaderboard?limit=10
+```
 
-### 2. API Endpoint Updates
+## Frontend Configuration Steps
 
-The following API endpoints have been updated:
+### 1. Create Environment File
 
-**Old Endpoint:**
+Create `.env` in the root of `NFL-Trivia-Game/`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+For production:
+```env
+VITE_API_URL=https://your-backend-url.railway.app
+```
+
+### 2. Update API Calls in Code
+
+Find all instances of:
 ```javascript
-fetch('/api/players', { ... })
+fetch(`${import.meta.env.VITE_API_URL}/api/players`, ...)
 ```
 
-**New Endpoint:**
+Replace with:
 ```javascript
-fetch(`${import.meta.env.VITE_API_URL}/api/trivia/players`, { ... })
+fetch(`${import.meta.env.VITE_API_URL}/api/trivia/players`, ...)
 ```
 
-### 3. Available Endpoints
+**Files to update:**
+- `src/App.jsx` (lines ~329 and ~568)
 
-#### POST `/api/trivia/players`
-Save player data after game completion.
+### 3. Response Format
 
-**Request Body:**
+The new backend returns a slightly different response format:
+
+**Old:**
 ```json
 {
-  "name": "Player Name",
-  "email": "player@example.com",
-  "team": "Team Name",
-  "score": 100
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "team": "Dallas Cowboys",
+  "score": 85,
+  "created_at": "2024-01-01T00:00:00.000Z"
 }
 ```
 
-**Response:**
+**New:**
 ```json
 {
-  "message": "Player saved successfully"
+  "message": "Trivia player saved successfully",
+  "player": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "team": "Dallas Cowboys",
+    "score": 85,
+    "created_at": "2024-01-01T00:00:00.000Z"
+  }
 }
 ```
 
-#### GET `/api/trivia/leaderboard?limit=10`
-Get top players from the trivia game.
+Update your code to handle `result.player` instead of just `result`.
 
-**Response:**
-```json
-{
-  "leaderboard": [
-    {
-      "name": "Player Name",
-      "team": "Team Name",
-      "score": 100,
-      "created_at": "2025-11-19T00:00:00.000Z"
-    }
-  ]
-}
+### 4. New Leaderboard Endpoint
+
+You can now fetch a leaderboard:
+
+```javascript
+const response = await fetch(
+  `${import.meta.env.VITE_API_URL}/api/trivia/leaderboard?limit=10`
+);
+const data = await response.json();
+// data will be an array of top players sorted by score
+```
+
+## Database
+
+The new backend uses the `trivia_players` table with this schema:
+
+```sql
+CREATE TABLE trivia_players (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    team VARCHAR(255) NOT NULL,
+    score INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ## Testing
 
-1. Start the backend server:
-   ```bash
-   cd nfl-teamates-game/backend
-   npm install
-   npm start
-   ```
+Test the new endpoints:
 
-2. Start the frontend:
-   ```bash
-   cd NFL-Trivia-Game
-   npm install
-   npm run dev
-   ```
+```bash
+# Save a player
+curl -X POST http://localhost:3000/api/trivia/players \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test Player","email":"test@example.com","team":"Dallas Cowboys","score":85}'
 
-3. Test the game flow and verify data is being saved to the backend.
+# Get all players
+curl http://localhost:3000/api/trivia/players
 
-## Deployment
+# Get leaderboard
+curl http://localhost:3000/api/trivia/leaderboard?limit=5
+```
 
-See the main [DEPLOYMENT.md](/DEPLOYMENT.md) in the root directory for detailed deployment instructions.
+## Old Backend Files
 
-## Troubleshooting
+The old backend files in `server/` and `long-drive-backend/` can be removed once migration is complete and tested.
 
-### CORS Errors
-If you see CORS errors, make sure the backend has CORS enabled and your frontend URL is whitelisted.
+## Questions?
 
-### Environment Variables Not Loading
-- Make sure the `.env` file is in the correct directory
-- Restart your development server after changing `.env`
-- Vite requires variables to be prefixed with `VITE_`
-
-### API Calls Failing
-- Check that the backend is running and accessible
-- Verify the `VITE_API_URL` is correct
-- Check browser console for error messages
-- Verify the backend database is properly initialized
+See the main [BACKEND_CONSOLIDATION_GUIDE.md](../BACKEND_CONSOLIDATION_GUIDE.md) for more details.

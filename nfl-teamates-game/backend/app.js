@@ -48,4 +48,15 @@ app.get('/api/db-test', async (req, res) => {
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
 
+// NFL Trivia Game routes
+const triviaRouter = require('./routes/trivia');
+app.use('/api/trivia', triviaRouter);
+
+// Journeyman game routes
+const journeymanRouter = require('./routes/journeyman');
+app.use('/api/journeyman', journeymanRouter);
+
+// Make pool available to routes
+app.set('pool', pool);
+
 module.exports = { app, pool };

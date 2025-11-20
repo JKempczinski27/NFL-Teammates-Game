@@ -75,7 +75,8 @@ export const useGameTracking = (customGameType = null) => {
   // Send game data to backend
   const sendGameData = async (durationOverride = null, additionalData = {}) => {
     try {
-      const response = await fetch(`${gameConfig.railwayUrl}/save-player`, {
+      const apiUrl = process.env.REACT_APP_API_URL || gameConfig.railwayUrl;
+      const response = await fetch(`${apiUrl}/api/journeyman/save-player`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,7 +159,8 @@ export const PlayerForm = ({ onSubmit, gameTitle = gameConfig.gameTitle }) => {
     
     // Send initial form data
     try {
-      const response = await fetch(`${gameConfig.railwayUrl}/save-player`, {
+      const apiUrl = process.env.REACT_APP_API_URL || gameConfig.railwayUrl;
+      const response = await fetch(`${apiUrl}/api/journeyman/save-player`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

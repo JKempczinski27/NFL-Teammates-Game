@@ -1,62 +1,63 @@
-// Routes for NFL Trivia Game
 const express = require('express');
 const router = express.Router();
 
-// Import pool from parent module
-let pool;
-
-// Initialize pool reference
-router.use((req, res, next) => {
-  if (!pool) {
-    pool = require('../index').pool;
-  }
-  next();
-});
-
-// Save player info for trivia game
+// POST endpoint to save trivia game player
 router.post('/players', async (req, res) => {
   const { name, email, team, score } = req.body;
+  const pool = req.app.get('pool');
 
-  // Input validation
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required' });
+  if (!name || !email || !team) {
+    return res.status(400).json({ error: 'Missing required fields: name, email, or team' });
   }
-
-  if (typeof name !== 'string' || typeof email !== 'string') {
-    return res.status(400).json({ error: 'Invalid input format' });
-  }
-
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
-
-  try {
-    await pool.query(
-      'INSERT INTO trivia_players (name, email, team, score, created_at) VALUES ($1, $2, $3, $4, NOW())',
-      [name.trim(), email.trim().toLowerCase(), team || null, score || 0]
-    );
-    res.status(200).json({ message: 'Player saved successfully' });
-  } catch (err) {
-    console.error('Error saving trivia player:', err);
-    res.status(500).json({ error: 'Error saving player. Please try again.' });
-  }
-});
-
-// Get leaderboard for trivia game
-router.get('/leaderboard', async (req, res) => {
-  const { limit = 10 } = req.query;
 
   try {
     const result = await pool.query(
-      'SELECT name, team, score, created_at FROM trivia_players ORDER BY score DESC LIMIT $1',
-      [parseInt(limit)]
+      'INSERT INTO trivia_players (name, email, team, score) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, email, team, score || 0]
     );
-    res.json({ leaderboard: result.rows });
+    res.status(201).json({
+      message: 'Trivia player saved successfully',
+      player: result.rows[0]
+    });
   } catch (err) {
-    console.error('Error fetching leaderboard:', err);
-    res.status(500).json({ error: 'Error fetching leaderboard' });
+    console.error('Error saving trivia player:', err);
+    if (err.code === '23505') {
+      res.status(400).json({ error: 'Email already exists' });
+    } else {
+      res.status(500).json({ error: 'Database error saving trivia player' });
+    }
+  }
+});
+
+// GET endpoint to retrieve all trivia game players
+router.get('/players', async (req, res) => {
+  const pool = req.app.get('pool');
+
+  try {
+    const result = await pool.query(
+      'SELECT * FROM trivia_players ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching trivia players:', err);
+    res.status(500).json({ error: 'Database error fetching trivia players' });
+  }
+});
+
+// GET endpoint to retrieve leaderboard
+router.get('/leaderboard', async (req, res) => {
+  const pool = req.app.get('pool');
+  const limit = parseInt(req.query.limit) || 10;
+
+  try {
+    const result = await pool.query(
+      'SELECT name, team, score, created_at FROM trivia_players ORDER BY score DESC, created_at ASC LIMIT $1',
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching trivia leaderboard:', err);
+    res.status(500).json({ error: 'Database error fetching leaderboard' });
   }
 });
 

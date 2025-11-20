@@ -1,207 +1,191 @@
-// Routes for Journeyman Game
 const express = require('express');
 const router = express.Router();
 
-// Import pool from parent module
-let pool;
+// Input validation helper
+const validatePlayerData = (data) => {
+  const errors = [];
 
-// Initialize pool reference
-router.use((req, res, next) => {
-  if (!pool) {
-    pool = require('../index').pool;
+  if (!data) {
+    return { valid: false, error: 'Request body required' };
   }
-  next();
-});
 
-// Save player data for journeyman game
+  const name = data.name?.trim();
+  const email = data.email?.trim();
+
+  // Validate name
+  if (!name || name.length === 0) {
+    errors.push('Name is required');
+  }
+  if (name && name.length > 100) {
+    errors.push('Name too long');
+  }
+
+  // Validate email
+  if (!email || email.length === 0) {
+    errors.push('Email is required');
+  }
+  if (email && (!email.includes('@') || !email.split('@')[1]?.includes('.'))) {
+    errors.push('Invalid email format');
+  }
+
+  // Basic injection detection
+  const dangerousPatterns = [
+    '<script', 'javascript:', 'DROP TABLE', 'UNION SELECT', '--', '; SELECT',
+    '<?php', '${', '$(', '`', 'eval(', 'exec('
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (name?.toLowerCase().includes(pattern.toLowerCase()) ||
+        email?.toLowerCase().includes(pattern.toLowerCase())) {
+      errors.push('Invalid input detected');
+      break;
+    }
+  }
+
+  // Validate numeric fields if present
+  const correctCount = data.correctCount;
+  if (correctCount !== undefined && correctCount !== null) {
+    if (typeof correctCount !== 'number' || correctCount < 0 || correctCount > 100) {
+      errors.push('Invalid score value');
+    }
+  }
+
+  const duration = data.durationInSeconds;
+  if (duration !== undefined && duration !== null) {
+    if (typeof duration !== 'number' || duration <= 0 || duration > 3600) {
+      errors.push('Invalid duration value');
+    }
+  }
+
+  return errors.length > 0
+    ? { valid: false, error: errors.join(', ') }
+    : { valid: true, name, email };
+};
+
+// POST endpoint to save Journeyman player data
 router.post('/save-player', async (req, res) => {
-  const {
-    name,
-    email,
-    sessionId,
-    gameType,
-    score,
-    guesses,
-    timeElapsed,
-    clientTimestamp,
-    browserInfo,
-    sessionInfo
-  } = req.body;
+  const pool = req.app.get('pool');
 
-  // Input validation
-  if (!name || !email) {
+  const validation = validatePlayerData(req.body);
+  if (!validation.valid) {
     return res.status(400).json({
       success: false,
-      error: 'Name and email are required'
+      error: validation.error
     });
   }
 
-  if (typeof name !== 'string' || typeof email !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid input format'
-    });
-  }
-
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid email format'
-    });
-  }
+  const { name, email } = validation;
+  const { correctCount, durationInSeconds, gameData } = req.body;
 
   try {
     const result = await pool.query(
       `INSERT INTO journeyman_players
-       (name, email, session_id, game_type, score, guesses, time_elapsed,
-        client_timestamp, browser_info, session_info, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
-       RETURNING id`,
+       (name, email, correct_count, duration_seconds, game_data)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
       [
-        name.trim(),
-        email.trim().toLowerCase(),
-        sessionId || null,
-        gameType || 'journeyman',
-        score || 0,
-        guesses || 0,
-        timeElapsed || 0,
-        clientTimestamp || new Date().toISOString(),
-        JSON.stringify(browserInfo || {}),
-        JSON.stringify(sessionInfo || {})
+        name,
+        email,
+        correctCount || 0,
+        durationInSeconds || 0,
+        gameData ? JSON.stringify(gameData) : null
       ]
     );
 
     res.status(200).json({
       success: true,
-      message: 'Player saved successfully',
-      playerId: result.rows[0].id
+      message: 'Player data saved',
+      player: {
+        id: result.rows[0].id,
+        name: result.rows[0].name,
+        email: result.rows[0].email,
+        correctCount: result.rows[0].correct_count,
+        durationInSeconds: result.rows[0].duration_seconds
+      }
     });
   } catch (err) {
-    console.error('Error saving journeyman player:', err);
+    console.error('Error saving Journeyman player:', err);
     res.status(500).json({
       success: false,
-      error: 'Error saving player. Please try again.'
+      error: 'Database error saving player data'
     });
   }
 });
 
-// Batch upload for multiple sessions
-router.post('/batch-upload', async (req, res) => {
-  const { sessions, batchSize, batchTimestamp } = req.body;
+// GET endpoint for Journeyman analytics
+router.get('/analytics', async (req, res) => {
+  const pool = req.app.get('pool');
 
-  if (!Array.isArray(sessions) || sessions.length === 0) {
-    return res.status(400).json({
+  // Check for API key (basic security)
+  const apiKey = req.headers['x-api-key'] || req.headers['authorization'];
+  const expectedKey = process.env.ADMIN_TOKEN || process.env.API_KEY;
+
+  if (!apiKey || apiKey.replace('Bearer ', '') !== expectedKey) {
+    return res.status(401).json({
       success: false,
-      error: 'Sessions must be a non-empty array'
+      error: 'API key required'
     });
   }
-
-  let successful = 0;
-  let failed = 0;
-  const errors = [];
-
-  for (const session of sessions) {
-    try {
-      await pool.query(
-        `INSERT INTO journeyman_players
-         (name, email, session_id, game_type, score, guesses, time_elapsed,
-          client_timestamp, browser_info, session_info, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())`,
-        [
-          session.name?.trim(),
-          session.email?.trim().toLowerCase(),
-          session.sessionId || null,
-          session.gameType || 'journeyman',
-          session.score || 0,
-          session.guesses || 0,
-          session.timeElapsed || 0,
-          session.clientTimestamp || new Date().toISOString(),
-          JSON.stringify(session.browserInfo || {}),
-          JSON.stringify(session.sessionInfo || {})
-        ]
-      );
-      successful++;
-    } catch (err) {
-      console.error('Error in batch upload item:', err);
-      failed++;
-      errors.push(err.message);
-    }
-  }
-
-  res.json({
-    success: true,
-    processed: sessions.length,
-    successful,
-    failed,
-    errors: errors.length > 0 ? errors : undefined
-  });
-});
-
-// Export analytics
-router.post('/export-analytics', async (req, res) => {
-  const { startDate, endDate, gameType } = req.body;
 
   try {
-    const query = `
-      SELECT * FROM journeyman_players
-      WHERE created_at >= $1 AND created_at <= $2
-      ${gameType ? 'AND game_type = $3' : ''}
+    const stats = await pool.query(`
+      SELECT
+        COUNT(*) as total_players,
+        AVG(correct_count) as average_score,
+        MAX(correct_count) as highest_score,
+        AVG(duration_seconds) as average_duration
+      FROM journeyman_players
+    `);
+
+    const recentPlayers = await pool.query(`
+      SELECT name, correct_count, duration_seconds, created_at
+      FROM journeyman_players
       ORDER BY created_at DESC
-    `;
-
-    const params = gameType
-      ? [startDate, endDate, gameType]
-      : [startDate, endDate];
-
-    const result = await pool.query(query, params);
+      LIMIT 10
+    `);
 
     res.json({
       success: true,
-      data: result.rows,
-      count: result.rows.length,
-      startDate,
-      endDate,
-      gameType
+      analytics: {
+        totalPlayers: parseInt(stats.rows[0].total_players),
+        averageScore: parseFloat(stats.rows[0].average_score) || 0,
+        highestScore: parseInt(stats.rows[0].highest_score) || 0,
+        averageDuration: parseFloat(stats.rows[0].average_duration) || 0,
+        recentPlayers: recentPlayers.rows
+      }
     });
   } catch (err) {
-    console.error('Error exporting analytics:', err);
+    console.error('Error fetching Journeyman analytics:', err);
     res.status(500).json({
       success: false,
-      error: 'Error exporting analytics'
+      error: 'Database error fetching analytics'
     });
   }
 });
 
-// Get leaderboard
+// GET endpoint for Journeyman leaderboard
 router.get('/leaderboard', async (req, res) => {
-  const { limit = 10, gameType } = req.query;
+  const pool = req.app.get('pool');
+  const limit = parseInt(req.query.limit) || 10;
 
   try {
-    const query = `
-      SELECT name, score, guesses, time_elapsed, created_at
-      FROM journeyman_players
-      ${gameType ? 'WHERE game_type = $2' : ''}
-      ORDER BY score DESC, time_elapsed ASC
-      LIMIT $1
-    `;
-
-    const params = gameType
-      ? [parseInt(limit), gameType]
-      : [parseInt(limit)];
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(
+      `SELECT name, correct_count, duration_seconds, created_at
+       FROM journeyman_players
+       ORDER BY correct_count DESC, duration_seconds ASC
+       LIMIT $1`,
+      [limit]
+    );
 
     res.json({
       success: true,
       leaderboard: result.rows
     });
   } catch (err) {
-    console.error('Error fetching leaderboard:', err);
+    console.error('Error fetching Journeyman leaderboard:', err);
     res.status(500).json({
       success: false,
-      error: 'Error fetching leaderboard'
+      error: 'Database error fetching leaderboard'
     });
   }
 });

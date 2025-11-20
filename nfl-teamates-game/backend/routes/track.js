@@ -1,50 +1,57 @@
 /**
- * Comprehensive User Tracking Route
- * Handles all tracking events and saves them to PostgreSQL database
+ * Comprehensive User Tracking Route - CONSOLIDATED
+ * Handles all tracking events for all three games and saves them to PostgreSQL database
+ * - NFL Teammates Game
+ * - Journeyman
+ * - NFL Trivia Game
  */
 
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-const { Pool } = require('pg');
-require('dotenv').config();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-// Database connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+// Import pool from parent module to avoid duplicate pool creation
+let pool;
+try {
+  pool = require('../index').pool;
+} catch (err) {
+  // Fallback for testing or standalone use
+  const { Pool } = require('pg');
+  require('dotenv').config();
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+}
 
 /**
  * Main tracking endpoint
  * Accepts various event types and saves them to appropriate tables
  */
 router.post('/', async (req, res) => {
-  const { eventType, eventData, sessionId, timestamp } = req.body;
+  const { eventType, eventData, sessionId, timestamp, gameType } = req.body;
 
   if (!eventType || !sessionId) {
     return res.status(400).json({ error: 'Missing required fields: eventType, sessionId' });
   }
+
+  // Default to 'teammates' if gameType not specified for backward compatibility
+  const game_type = gameType || 'teammates';
 
   const client = await pool.connect();
 
   try {
     // Always insert into main events table
     await client.query(
-      'INSERT INTO events (session_id, event_type, event_data, timestamp) VALUES ($1, $2, $3, $4)',
-      [sessionId, eventType, eventData, timestamp || new Date()]
+      'INSERT INTO events (session_id, game_type, event_type, event_data, timestamp) VALUES ($1, $2, $3, $4, $5)',
+      [sessionId, game_type, eventType, eventData, timestamp || new Date()]
     );
 
     // Handle specific event types with specialized tables
     switch (eventType) {
       case 'session_start':
-        await handleSessionStart(client, sessionId, eventData);
+        await handleSessionStart(client, sessionId, eventData, game_type);
         break;
 
       case 'session_end':
@@ -56,11 +63,11 @@ router.post('/', async (req, res) => {
         break;
 
       case 'answer_submitted':
-        await handleAnswerSubmitted(client, sessionId, eventData);
+        await handleAnswerSubmitted(client, sessionId, eventData, game_type);
         break;
 
       case 'shared':
-        await handleShare(client, sessionId, eventData);
+        await handleShare(client, sessionId, eventData, game_type);
         break;
 
       case 'activity':
@@ -86,13 +93,13 @@ router.post('/', async (req, res) => {
 });
 
 // Handler functions for specific event types
-async function handleSessionStart(client, sessionId, eventData) {
+async function handleSessionStart(client, sessionId, eventData, gameType = 'teammates') {
   await client.query(
-    `INSERT INTO user_sessions (session_id, started_at, last_activity_at)
-     VALUES ($1, NOW(), NOW())
+    `INSERT INTO user_sessions (session_id, game_type, started_at, last_activity_at)
+     VALUES ($1, $2, NOW(), NOW())
      ON CONFLICT (session_id) DO UPDATE
      SET started_at = NOW(), last_activity_at = NOW()`,
-    [sessionId]
+    [sessionId, gameType]
   );
 }
 
@@ -123,14 +130,14 @@ async function handleQuestionViewed(client, sessionId, eventData) {
   );
 }
 
-async function handleAnswerSubmitted(client, sessionId, eventData) {
+async function handleAnswerSubmitted(client, sessionId, eventData, gameType = 'teammates') {
   const { questionIndex, userAnswer, isCorrect, attemptsLeft, timeToAnswer } = eventData || {};
 
   // Insert into question_analytics
   await client.query(
-    `INSERT INTO question_analytics (session_id, question_index, is_correct, attempts_used, answer_given, time_to_answer)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [sessionId, questionIndex, isCorrect, 3 - (attemptsLeft || 0), userAnswer, timeToAnswer]
+    `INSERT INTO question_analytics (session_id, game_type, question_index, is_correct, attempts_used, answer_given, time_to_answer)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [sessionId, gameType, questionIndex, isCorrect, 3 - (attemptsLeft || 0), userAnswer, timeToAnswer]
   );
 
   // Update session questions_answered count
@@ -144,12 +151,12 @@ async function handleAnswerSubmitted(client, sessionId, eventData) {
   );
 }
 
-async function handleShare(client, sessionId, eventData) {
+async function handleShare(client, sessionId, eventData, gameType = 'teammates') {
   const { platform, questionIndex } = eventData || {};
 
   await client.query(
-    'INSERT INTO share_analytics (session_id, platform, question_index) VALUES ($1, $2, $3)',
-    [sessionId, platform, questionIndex]
+    'INSERT INTO share_analytics (session_id, game_type, platform, question_index) VALUES ($1, $2, $3, $4)',
+    [sessionId, gameType, platform, questionIndex]
   );
 }
 
@@ -178,14 +185,16 @@ async function handleDropOff(client, sessionId, eventData) {
 router.get('/', (req, res) => {
   res.json({
     status: 'operational',
-    message: 'Comprehensive tracking endpoint is active',
+    message: 'Comprehensive tracking endpoint is active for all games',
+    supportedGames: ['teammates', 'journeyman', 'trivia'],
     supportedEvents: [
-      'game_started',
-      'game_ended',
-      'question_started',
+      'session_start',
+      'session_end',
+      'question_viewed',
       'answer_submitted',
       'shared',
-      'session_ping',
+      'activity',
+      'drop_off'
     ],
   });
 });
@@ -199,27 +208,40 @@ router.get('/analytics/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    // Get user summary
-    const userQuery = 'SELECT * FROM user_engagement_summary WHERE session_id = $1';
-    const userData = await client.query(userQuery, [sessionId]);
+    // Get session data
+    const sessionQuery = 'SELECT * FROM user_sessions WHERE session_id = $1';
+    const sessionData = await client.query(sessionQuery, [sessionId]);
 
-    // Get session diversity
-    const diversityQuery = 'SELECT * FROM session_game_diversity WHERE session_id = $1';
-    const diversityData = await client.query(diversityQuery, [sessionId]);
-
-    // Get recent attempts
-    const attemptsQuery = `
-      SELECT * FROM question_attempts
+    // Get question analytics
+    const questionsQuery = `
+      SELECT * FROM question_analytics
       WHERE session_id = $1
-      ORDER BY answered_at DESC
-      LIMIT 20
+      ORDER BY timestamp DESC
     `;
-    const attemptsData = await client.query(attemptsQuery, [sessionId]);
+    const questionsData = await client.query(questionsQuery, [sessionId]);
+
+    // Get share data
+    const sharesQuery = `
+      SELECT * FROM share_analytics
+      WHERE session_id = $1
+      ORDER BY shared_at DESC
+    `;
+    const sharesData = await client.query(sharesQuery, [sessionId]);
+
+    // Get all events
+    const eventsQuery = `
+      SELECT * FROM events
+      WHERE session_id = $1
+      ORDER BY timestamp DESC
+      LIMIT 50
+    `;
+    const eventsData = await client.query(eventsQuery, [sessionId]);
 
     res.json({
-      user: userData.rows[0] || null,
-      sessionDiversity: diversityData.rows,
-      recentAttempts: attemptsData.rows,
+      session: sessionData.rows[0] || null,
+      questions: questionsData.rows,
+      shares: sharesData.rows,
+      events: eventsData.rows
     });
   } catch (error) {
     console.error('Error fetching analytics:', error);

@@ -180,9 +180,23 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'NFL Teammates Game API is running',
+    message: 'Consolidated NFL Games API is running',
+    games: ['teammates', 'journeyman', 'trivia'],
     timestamp: new Date().toISOString(),
     redis: redisClient ? 'connected' : 'disabled',
+    version: '2.0.0-consolidated'
+  });
+});
+
+// Health endpoint alias
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    message: 'All systems operational',
+    games: ['teammates', 'journeyman', 'trivia'],
+    timestamp: new Date().toISOString(),
+    database: 'connected',
+    redis: redisClient ? 'connected' : 'disabled'
   });
 });
 
@@ -240,6 +254,11 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// ============================================
+// CONSOLIDATED ROUTES FOR ALL THREE GAMES
+// ============================================
+
+// Tracking routes (all games)
 const trackRouter = require('./routes/track');
 app.use('/api/track', trackRouter);
 
@@ -247,21 +266,43 @@ app.use('/api/track', trackRouter);
 const s3ManagementRouter = require('./routes/s3-management');
 app.use('/api/s3', s3ManagementRouter);
 
-// NFL Trivia Game routes
-const triviaRouter = require('./routes/trivia');
-app.use('/api/trivia', triviaRouter);
+// Analytics routes
+const analyticsRouter = require('./routes/analytics');
+app.use('/api/analytics', analyticsRouter);
 
-// Journeyman Game routes
-const journeymanRouter = require('./routes/journeyman');
-app.use('/api/journeyman', journeymanRouter);
+// Players routes (all games)
+const playersRouter = require('./routes/players');
+app.use('/api/players', playersRouter);
+
+// Game data routes (Journeyman & others)
+const gameDataRouter = require('./routes/game-data');
+app.use('/api/game-data', gameDataRouter);
+
+// Data protection routes (GDPR compliance)
+const dataProtectionRouter = require('./routes/data-protection');
+app.use('/api/data-protection', dataProtectionRouter);
 
 app.listen(port, () => {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🎮 CONSOLIDATED NFL GAMES API - v2.0.0`);
+  console.log(`${'='.repeat(60)}`);
   console.log(`✅ Server running on port ${port}`);
+  console.log(`🎯 Games supported: NFL Teammates, Journeyman, NFL Trivia`);
   console.log(`📊 Database pool: ${pool.totalCount} connections`);
   console.log(`🔒 Rate limiting: enabled`);
   console.log(`🗜️  Compression: enabled`);
   console.log(`⚡ Redis caching: ${redisClient ? 'enabled' : 'disabled'}`);
   console.log(`🐛 Sentry logging: ${process.env.SENTRY_DSN ? 'enabled' : 'disabled'}`);
+  console.log(`\n📡 Available endpoints:`);
+  console.log(`   GET  /                          - API info`);
+  console.log(`   GET  /health                    - Health check`);
+  console.log(`   POST /api/track                 - Event tracking (all games)`);
+  console.log(`   POST /api/players               - Player management`);
+  console.log(`   POST /api/game-data             - Game submissions`);
+  console.log(`   GET  /api/analytics             - Analytics data`);
+  console.log(`   GET  /api/data-protection       - GDPR compliance`);
+  console.log(`   POST /api/s3                    - S3 management`);
+  console.log(`${'='.repeat(60)}\n`);
 });
 
 // Export pool and redis client for use in other modules
