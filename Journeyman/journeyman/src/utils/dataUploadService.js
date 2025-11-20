@@ -3,7 +3,7 @@
 
 class DataUploadService {
   constructor() {
-    this.apiBase = process.env.REACT_APP_API_URL || 'https://journeyman-production.up.railway.app';
+    this.apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8080';
     this.retryAttempts = 3;
     this.uploadQueue = [];
     this.isProcessingQueue = false;
@@ -207,7 +207,7 @@ class DataUploadService {
   // Get S3 status and recent files
   async getS3Status() {
     try {
-      const response = await fetch(`${this.apiBase}/s3/status`);
+      const response = await fetch(`${this.apiBase}/api/s3/status`);
       const data = await response.json();
       return data;
     } catch (error) {
@@ -219,7 +219,7 @@ class DataUploadService {
   // Download data from S3
   async downloadFromS3(key) {
     try {
-      const response = await fetch(`${this.apiBase}/s3/download/${encodeURIComponent(key)}`);
+      const response = await fetch(`${this.apiBase}/api/s3/download/${encodeURIComponent(key)}`);
       const data = await response.json();
       return data;
     } catch (error) {

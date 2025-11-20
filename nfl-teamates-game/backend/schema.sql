@@ -63,3 +63,36 @@ CREATE TABLE IF NOT EXISTS players (
   email VARCHAR(255) UNIQUE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- NFL Trivia Game players table
+CREATE TABLE IF NOT EXISTS trivia_players (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  team VARCHAR(255),
+  score INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Journeyman Game players table
+CREATE TABLE IF NOT EXISTS journeyman_players (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  session_id VARCHAR(255),
+  game_type VARCHAR(100) DEFAULT 'journeyman',
+  score INTEGER DEFAULT 0,
+  guesses INTEGER DEFAULT 0,
+  time_elapsed INTEGER DEFAULT 0,
+  client_timestamp TIMESTAMP WITH TIME ZONE,
+  browser_info JSONB,
+  session_info JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_trivia_players_email ON trivia_players(email);
+CREATE INDEX IF NOT EXISTS idx_trivia_players_score ON trivia_players(score);
+CREATE INDEX IF NOT EXISTS idx_journeyman_players_email ON journeyman_players(email);
+CREATE INDEX IF NOT EXISTS idx_journeyman_players_session_id ON journeyman_players(session_id);
+CREATE INDEX IF NOT EXISTS idx_journeyman_players_score ON journeyman_players(score);
