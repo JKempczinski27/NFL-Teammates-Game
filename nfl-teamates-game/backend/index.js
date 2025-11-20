@@ -105,7 +105,20 @@ app.use(compression({
 
 // Parse JSON bodies
 app.use(express.json());
+
+// Serve static files from public directory
 app.use(express.static('public'));
+
+// Dashboard route (with optional authentication)
+app.get('/dashboard', (req, res) => {
+  // Optional: Add authentication check here
+  // const adminToken = req.headers['x-admin-token'];
+  // if (adminToken !== process.env.ADMIN_API_KEY) {
+  //   return res.status(401).send('Unauthorized');
+  // }
+
+  res.sendFile('dashboard.html', { root: './public' });
+});
 
 // API Rate limiting - prevent abuse
 const apiLimiter = rateLimit({
@@ -296,10 +309,11 @@ app.listen(port, () => {
   console.log(`\n📡 Available endpoints:`);
   console.log(`   GET  /                          - API info`);
   console.log(`   GET  /health                    - Health check`);
+  console.log(`   GET  /dashboard                 - Analytics Dashboard 📊`);
   console.log(`   POST /api/track                 - Event tracking (all games)`);
   console.log(`   POST /api/players               - Player management`);
   console.log(`   POST /api/game-data             - Game submissions`);
-  console.log(`   GET  /api/analytics             - Analytics data`);
+  console.log(`   GET  /api/analytics/*           - Analytics endpoints`);
   console.log(`   GET  /api/data-protection       - GDPR compliance`);
   console.log(`   POST /api/s3                    - S3 management`);
   console.log(`${'='.repeat(60)}\n`);

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Games Analytics Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>🏈 NFL Games Analytics Dashboard</h1>
+                <div class="header-actions">
+                    <button class="refresh-btn" onclick="refreshDashboard()">
+                        <span class="refresh-icon">↻</span> Refresh
+                    </button>
+                    <span class="last-updated">Last updated: <span id="lastUpdated">--:--</span></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading analytics...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <div class="error-content">
+                <h2>⚠️ Error Loading Data</h2>
+                <p id="errorMessage"></p>
+                <button onclick="refreshDashboard()">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <div id="dashboardContent" style="display: none;">
+            <!-- Summary Cards -->
+            <section class="summary-section">
+                <h2>📊 Overview</h2>
+                <div class="summary-grid" id="summaryCards">
+                    <!-- Cards will be generated here -->
+                </div>
+            </section>
+
+            <!-- Game Tabs -->
+            <section class="tabs-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('all')">All Games</button>
+                    <button class="tab-btn" onclick="switchTab('teammates')">NFL Teammates</button>
+                    <button class="tab-btn" onclick="switchTab('journeyman')">Journeyman</button>
+                    <button class="tab-btn" onclick="switchTab('trivia')">NFL Trivia</button>
+                </div>
+            </section>
+
+            <!-- Charts Grid -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    <!-- DAU Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Daily Active Users (Last 30 Days)</h3>
+                            <select id="dauGameFilter" onchange="updateDAUChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="dauChart"></canvas>
+                    </div>
+
+                    <!-- Completion Rate Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Completion Rates by Game</h3>
+                        </div>
+                        <canvas id="completionChart"></canvas>
+                    </div>
+
+                    <!-- Engagement Levels -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>User Engagement Levels</h3>
+                            <select id="engagementGameFilter" onchange="updateEngagementChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="engagementChart"></canvas>
+                    </div>
+
+                    <!-- Session Duration -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Session Duration Distribution</h3>
+                            <select id="durationGameFilter" onchange="updateDurationChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="durationChart"></canvas>
+                    </div>
+
+                    <!-- Hourly Patterns -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Hourly Activity Patterns</h3>
+                            <select id="hourlyGameFilter" onchange="updateHourlyChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+
+                    <!-- Weekly Patterns -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Weekly Activity Patterns</h3>
+                            <select id="weeklyGameFilter" onchange="updateWeeklyChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Question Performance (Game-Specific) -->
+            <section class="question-section" id="questionSection">
+                <h2>🎯 Question Performance</h2>
+                <div class="question-game-selector">
+                    <label>Select Game:</label>
+                    <select id="questionGameSelect" onchange="updateQuestionPerformance()">
+                        <option value="teammates">NFL Teammates</option>
+                        <option value="journeyman">Journeyman</option>
+                        <option value="trivia">NFL Trivia</option>
+                    </select>
+                </div>
+                <div class="chart-card">
+                    <canvas id="questionChart"></canvas>
+                </div>
+                <div class="question-stats" id="questionStats"></div>
+            </section>
+
+            <!-- Leaderboard Section -->
+            <section class="leaderboard-section">
+                <h2>🏆 Leaderboards</h2>
+                <div class="leaderboard-tabs">
+                    <button class="leaderboard-tab active" onclick="switchLeaderboard('teammates')">NFL Teammates</button>
+                    <button class="leaderboard-tab" onclick="switchLeaderboard('journeyman')">Journeyman</button>
+                    <button class="leaderboard-tab" onclick="switchLeaderboard('trivia')">NFL Trivia</button>
+                </div>
+                <div class="leaderboard-content" id="leaderboardContent">
+                    <!-- Leaderboard will be populated here -->
+                </div>
+            </section>
+
+            <!-- Retention & Dropout -->
+            <section class="retention-section">
+                <div class="retention-grid">
+                    <!-- Retention Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>7-Day Retention Rate</h3>
+                            <select id="retentionGameFilter" onchange="updateRetentionChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="retentionChart"></canvas>
+                    </div>
+
+                    <!-- Dropout Analysis -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Dropout Analysis</h3>
+                            <select id="dropoutGameFilter" onchange="updateDropoutChart()">
+                                <option value="">All Games</option>
+                                <option value="teammates">NFL Teammates</option>
+                                <option value="journeyman">Journeyman</option>
+                                <option value="trivia">NFL Trivia</option>
+                            </select>
+                        </div>
+                        <canvas id="dropoutChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Share Analytics -->
+            <section class="share-section">
+                <h2>📱 Social Sharing</h2>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Share Platform Distribution</h3>
+                        <select id="shareGameFilter" onchange="updateShareChart()">
+                            <option value="">All Games</option>
+                            <option value="teammates">NFL Teammates</option>
+                            <option value="journeyman">Journeyman</option>
+                            <option value="trivia">NFL Trivia</option>
+                        </select>
+                    </div>
+                    <canvas id="shareChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Export Section -->
+            <section class="export-section">
+                <h2>📥 Export Data</h2>
+                <div class="export-controls">
+                    <div class="export-form">
+                        <label>Game:</label>
+                        <select id="exportGame">
+                            <option value="teammates">NFL Teammates</option>
+                            <option value="journeyman">Journeyman</option>
+                            <option value="trivia">NFL Trivia</option>
+                        </select>
+
+                        <label>Data Type:</label>
+                        <select id="exportType">
+                            <option value="sessions">Sessions</option>
+                            <option value="questions">Questions</option>
+                            <option value="shares">Shares</option>
+                        </select>
+
+                        <button onclick="exportData()" class="export-btn">Download CSV</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
