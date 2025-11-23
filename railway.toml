@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd backend && npm install"
+
+[deploy]
+# Temporary: Run migration instead of starting server
+# Change back to "cd backend && npm start" after migration is complete
+startCommand = "cd backend && node migrate-to-single-table.js && sleep infinity"
+# startCommand = "cd backend && npm start"  # Uncomment after migration
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
