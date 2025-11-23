@@ -298,6 +298,10 @@ app.use('/api/game-data', gameDataRouter);
 const dataProtectionRouter = require('./routes/data-protection');
 app.use('/api/data-protection', dataProtectionRouter);
 
+// Questions routes (NFL Teammates Game - iOS)
+const questionsRouter = require('./routes/questions');
+app.use('/api/questions', questionsRouter);
+
 app.listen(port, () => {
   console.log(`\n${'='.repeat(60)}`);
   console.log(`🎮 CONSOLIDATED NFL GAMES API - v2.0.0`);
@@ -316,6 +320,7 @@ app.listen(port, () => {
   console.log(`   POST /api/track                 - Event tracking (all games)`);
   console.log(`   POST /api/players               - Player management`);
   console.log(`   POST /api/game-data             - Game submissions`);
+  console.log(`   GET  /api/questions             - Game questions (iOS app)`);
   console.log(`   GET  /api/analytics/*           - Analytics endpoints`);
   console.log(`   GET  /api/data-protection       - GDPR compliance`);
   console.log(`   POST /api/s3                    - S3 management`);
