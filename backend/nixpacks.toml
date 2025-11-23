@@ -1,11 +1,17 @@
+# Nixpacks configuration for NFL Games Backend
+# This file is located in the backend directory
+# Railway Root Directory should be set to: backend
+
 [phases.setup]
 nixPkgs = ['nodejs_22']
+aptPkgs = []
 
 [phases.install]
-cmds = ['npm install --omit=dev']
+cmds = ['npm install --omit=dev --prefer-offline']
 
 [phases.build]
-# Skip build phase - no compilation needed
+# No build step needed - this is a pure Node.js server
+dependsOn = ['install']
 
 [start]
-cmd = 'npm start'
+cmd = 'node index.js'
