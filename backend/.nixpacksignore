@@ -1,0 +1,7 @@
+# Ignore everything that might cause auto-detection
+*.md
+*.txt
+tests/
+coverage/
+.git/
+node_modules/
