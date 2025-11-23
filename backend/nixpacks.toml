@@ -2,7 +2,10 @@
 nixPkgs = ['nodejs_22']
 
 [phases.install]
-cmds = ['npm install']
+cmds = ['npm install --omit=dev']
+
+[phases.build]
+# Skip build phase - no compilation needed
 
 [start]
-cmd = 'node migrate-to-single-table.js && sleep infinity'
+cmd = 'npm start'
