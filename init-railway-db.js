@@ -6,8 +6,21 @@
 
 const { Pool } = require('pg');
 
-// Use your Railway DATABASE_URL
-const DATABASE_URL = 'postgresql://postgres:AUaEqesXVGOrvjQJAquMzVxBGtwmiLTN@crossover.proxy.rlwy.net:32227/railway';
+// Get DATABASE_URL from environment variable or command line argument
+const DATABASE_URL = process.env.DATABASE_URL || process.argv[2];
+
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL not provided!');
+  console.error('\nUsage:');
+  console.error('  DATABASE_URL="your-db-url" node init-railway-db.js');
+  console.error('  OR');
+  console.error('  node init-railway-db.js "your-db-url"');
+  console.error('\nGet your DATABASE_URL from Railway:');
+  console.error('  1. Go to your PostgreSQL service in Railway');
+  console.error('  2. Click "Connect"');
+  console.error('  3. Copy the "Postgres Connection URL"\n');
+  process.exit(1);
+}
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
