@@ -51,7 +51,13 @@ async function checkAndInitDatabase() {
       console.log('📦 Players table not found. Initializing database...');
 
       // Read and execute the consolidated schema
-      const schemaPath = path.join(__dirname, 'schema-single-table.sql');
+      // Try the simplified manual schema first, fallback to full schema
+      let schemaPath = path.join(__dirname, 'schema-railway-manual.sql');
+
+      if (!fs.existsSync(schemaPath)) {
+        console.log('   Simplified schema not found, trying full schema...');
+        schemaPath = path.join(__dirname, 'schema-single-table.sql');
+      }
 
       console.log('📄 Reading schema from:', schemaPath);
       if (!fs.existsSync(schemaPath)) {
@@ -61,7 +67,7 @@ async function checkAndInitDatabase() {
       }
 
       const schema = fs.readFileSync(schemaPath, 'utf8');
-      console.log('📝 Schema file loaded, executing...');
+      console.log('📝 Schema file loaded (' + schema.length + ' bytes), executing...');
 
       await pool.query(schema);
 
