@@ -16,4 +16,4 @@ cmds = ['npm install --omit=dev']
 # No build needed
 
 [start]
-cmd = 'npm start'
+cmd = 'node start.js'
