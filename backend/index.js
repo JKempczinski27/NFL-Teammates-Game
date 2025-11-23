@@ -298,29 +298,34 @@ app.use('/api/game-data', gameDataRouter);
 const dataProtectionRouter = require('./routes/data-protection');
 app.use('/api/data-protection', dataProtectionRouter);
 
-app.listen(port, () => {
-  console.log(`\n${'='.repeat(60)}`);
-  console.log(`🎮 CONSOLIDATED NFL GAMES API - v2.0.0`);
-  console.log(`${'='.repeat(60)}`);
-  console.log(`✅ Server running on port ${port}`);
-  console.log(`🎯 Games supported: NFL Teammates, Journeyman, NFL Trivia`);
-  console.log(`📊 Database pool: ${pool.totalCount} connections`);
-  console.log(`🔒 Rate limiting: enabled`);
-  console.log(`🗜️  Compression: enabled`);
-  console.log(`⚡ Redis caching: ${redisClient ? 'enabled' : 'disabled'}`);
-  console.log(`🐛 Sentry logging: ${process.env.SENTRY_DSN ? 'enabled' : 'disabled'}`);
-  console.log(`\n📡 Available endpoints:`);
-  console.log(`   GET  /                          - API info`);
-  console.log(`   GET  /health                    - Health check`);
-  console.log(`   GET  /dashboard                 - Analytics Dashboard 📊`);
-  console.log(`   POST /api/track                 - Event tracking (all games)`);
-  console.log(`   POST /api/players               - Player management`);
-  console.log(`   POST /api/game-data             - Game submissions`);
-  console.log(`   GET  /api/analytics/*           - Analytics endpoints`);
-  console.log(`   GET  /api/data-protection       - GDPR compliance`);
-  console.log(`   POST /api/s3                    - S3 management`);
-  console.log(`${'='.repeat(60)}\n`);
-});
+// Only start server if not in serverless environment (Vercel)
+if (!isVercel) {
+  app.listen(port, () => {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🎮 CONSOLIDATED NFL GAMES API - v2.0.0`);
+    console.log(`${'='.repeat(60)}`);
+    console.log(`✅ Server running on port ${port}`);
+    console.log(`🎯 Games supported: NFL Teammates, Journeyman, NFL Trivia`);
+    console.log(`📊 Database pool: ${pool.totalCount} connections`);
+    console.log(`🔒 Rate limiting: enabled`);
+    console.log(`🗜️  Compression: enabled`);
+    console.log(`⚡ Redis caching: ${redisClient ? 'enabled' : 'disabled'}`);
+    console.log(`🐛 Sentry logging: ${process.env.SENTRY_DSN ? 'enabled' : 'disabled'}`);
+    console.log(`\n📡 Available endpoints:`);
+    console.log(`   GET  /                          - API info`);
+    console.log(`   GET  /health                    - Health check`);
+    console.log(`   GET  /dashboard                 - Analytics Dashboard 📊`);
+    console.log(`   POST /api/track                 - Event tracking (all games)`);
+    console.log(`   POST /api/players               - Player management`);
+    console.log(`   POST /api/game-data             - Game submissions`);
+    console.log(`   GET  /api/analytics/*           - Analytics endpoints`);
+    console.log(`   GET  /api/data-protection       - GDPR compliance`);
+    console.log(`   POST /api/s3                    - S3 management`);
+    console.log(`${'='.repeat(60)}\n`);
+  });
+}
 
-// Export pool and redis client for use in other modules
-module.exports = { pool, redisClient };
+// Export app for serverless (Vercel), and pool/redis for other modules
+module.exports = app;
+module.exports.pool = pool;
+module.exports.redisClient = redisClient;
