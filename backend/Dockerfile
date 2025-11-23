@@ -16,5 +16,5 @@ COPY . .
 # Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
-# Start the application
-CMD ["node", "index.js"]
+# Start the application (start.js will initialize DB and then start server)
+CMD ["node", "start.js"]
