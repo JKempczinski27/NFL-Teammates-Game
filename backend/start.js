@@ -10,15 +10,31 @@ const fs = require('fs');
 const path = require('path');
 
 async function checkAndInitDatabase() {
+  // Check if DATABASE_URL is set
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL environment variable is not set!');
+    console.error('   Please set DATABASE_URL in Railway service variables');
+    return false;
+  }
+
+  console.log('📌 DATABASE_URL detected:', process.env.DATABASE_URL.substring(0, 20) + '...');
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
+    connectionTimeoutMillis: 10000,
   });
 
   try {
     console.log('🔍 Checking database schema...');
+    console.log('🔌 Attempting to connect to database...');
+
+    // Test connection first
+    const connectionTest = await pool.query('SELECT NOW()');
+    console.log('✅ Database connection successful!');
+    console.log('   Server time:', connectionTest.rows[0].now);
 
     // Check if consolidated players table exists
     const result = await pool.query(`
@@ -36,7 +52,16 @@ async function checkAndInitDatabase() {
 
       // Read and execute the consolidated schema
       const schemaPath = path.join(__dirname, 'schema-single-table.sql');
+
+      console.log('📄 Reading schema from:', schemaPath);
+      if (!fs.existsSync(schemaPath)) {
+        console.error('❌ Schema file not found at:', schemaPath);
+        await pool.end();
+        return false;
+      }
+
       const schema = fs.readFileSync(schemaPath, 'utf8');
+      console.log('📝 Schema file loaded, executing...');
 
       await pool.query(schema);
 
@@ -52,8 +77,18 @@ async function checkAndInitDatabase() {
     await pool.end();
     return true;
   } catch (error) {
-    console.error('❌ Database initialization error:', error.message);
-    await pool.end();
+    console.error('❌ Database initialization error:');
+    console.error('   Message:', error.message || 'No error message');
+    console.error('   Code:', error.code || 'No error code');
+    console.error('   Details:', error.detail || 'No details');
+    console.error('   Full error:', error);
+
+    try {
+      await pool.end();
+    } catch (endError) {
+      console.error('   Error closing pool:', endError.message);
+    }
+
     return false;
   }
 }
@@ -83,12 +118,16 @@ async function startServer() {
   console.log('║   NFL GAMES BACKEND - STARTUP                          ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
+  // Always try to initialize database, but don't exit if it fails
   const dbReady = await checkAndInitDatabase();
 
   if (dbReady) {
-    await startServer();
+    console.log('✅ Database ready, starting server...');
   } else {
-    console.error('\n❌ Failed to initialize database. Exiting.');
-    process.exit(1);
+    console.warn('\n⚠️  Database initialization failed, but starting server anyway...');
+    console.warn('   The server will start, but database operations will fail.');
+    console.warn('   Check the error messages above and fix the DATABASE_URL.');
   }
+
+  await startServer();
 })();
