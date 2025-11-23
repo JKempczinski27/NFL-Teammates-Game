@@ -2,6 +2,10 @@
 # This file is located in the backend directory
 # Railway Root Directory should be set to: backend
 
+[variables]
+# Force cache invalidation - change this number to rebuild
+CACHE_BUST = "2"
+
 [phases.setup]
 nixPkgs = ['nodejs_22']
 aptPkgs = []
