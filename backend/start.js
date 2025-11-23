@@ -118,12 +118,16 @@ async function startServer() {
   console.log('║   NFL GAMES BACKEND - STARTUP                          ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
+  // Always try to initialize database, but don't exit if it fails
   const dbReady = await checkAndInitDatabase();
 
   if (dbReady) {
-    await startServer();
+    console.log('✅ Database ready, starting server...');
   } else {
-    console.error('\n❌ Failed to initialize database. Exiting.');
-    process.exit(1);
+    console.warn('\n⚠️  Database initialization failed, but starting server anyway...');
+    console.warn('   The server will start, but database operations will fail.');
+    console.warn('   Check the error messages above and fix the DATABASE_URL.');
   }
+
+  await startServer();
 })();
