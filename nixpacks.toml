@@ -1,0 +1,19 @@
+# ROOT nixpacks.toml - Railway will read this first
+# This overrides all auto-detection
+
+[variables]
+NIXPACKS_NO_MUSL = "1"
+
+[phases.setup]
+nixPkgs = ['nodejs_22']
+
+[phases.install]
+# Since Railway root directory is set to "backend",
+# we're already in that directory during install
+cmds = ['npm install --omit=dev']
+
+[phases.build]
+# No build needed
+
+[start]
+cmd = 'npm start'

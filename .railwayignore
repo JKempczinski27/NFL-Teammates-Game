@@ -1,0 +1,9 @@
+# Tell Railway to ignore all other directories during detection
+journeyman/
+nfl-trivia-game/
+nfl-teammates-game/
+NFLTeammatesGameiOS/
+scripts/
+docs/
+*.md
+.git/
