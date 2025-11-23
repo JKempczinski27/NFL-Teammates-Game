@@ -25,18 +25,21 @@ if (process.env.SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
-// Optimized DB connection pool with better configuration
+// Optimized DB connection pool for serverless environment (Vercel)
+// Serverless functions are ephemeral, so we need minimal connection pooling
+const isVercel = process.env.VERCEL === '1';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-  // Connection pool optimization
-  max: 20, // Maximum number of clients in the pool
-  min: 5, // Minimum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  // Connection pool optimization for serverless
+  max: isVercel ? 1 : 20, // Use 1 connection for Vercel, 20 for traditional hosting
+  min: isVercel ? 0 : 5, // No minimum connections for serverless
+  idleTimeoutMillis: isVercel ? 1000 : 30000, // Quick cleanup for serverless (1s vs 30s)
   connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
   maxUses: 7500, // Close (and replace) a connection after it has been used 7500 times
+  allowExitOnIdle: isVercel ? true : false, // Allow pool to close when idle in serverless
 });
 
 // Initialize Redis for caching
