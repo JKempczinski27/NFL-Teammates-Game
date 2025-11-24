@@ -286,6 +286,10 @@ app.use('/api/s3', s3ManagementRouter);
 const analyticsRouter = require('./routes/analytics');
 app.use('/api/analytics', analyticsRouter);
 
+// Player Analytics routes (comprehensive player-based analytics)
+const playerAnalyticsRouter = require('./routes/player-analytics');
+app.use('/api/player-analytics', playerAnalyticsRouter);
+
 // Players routes (all games)
 const playersRouter = require('./routes/players');
 app.use('/api/players', playersRouter);
