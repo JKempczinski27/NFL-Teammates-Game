@@ -54,13 +54,13 @@ class EventTrackingService {
             attemptsLeft: attemptsLeft
         )
 
-        await trackEvent(eventType: "answer", eventData: eventData)
+        await trackEvent(eventType: "answer_submitted", eventData: eventData)
     }
 
     /// Track a social share
     func trackShare(platform: String) async {
         let eventData = EventData(platform: platform)
-        await trackEvent(eventType: "share", eventData: eventData)
+        await trackEvent(eventType: "shared", eventData: eventData)
     }
 
     // MARK: - Private Methods
