@@ -3,7 +3,6 @@ import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
-import { getPlayers } from './db';
 import { LazyImage, optimizePlayerImageUrl } from './components/LazyImage';
 
 function getSessionId() {
@@ -59,7 +58,6 @@ function CommonPlayerGame() {
 	const [userAnswer, setUserAnswer] = useState('');
 	const [isCorrect, setIsCorrect] = useState(null);
 	const [attemptsLeft, setAttemptsLeft] = useState(4);
-  const [players, setPlayers] = useState([]);
   const [sessionStartTime, setSessionStartTime] = useState(Date.now());
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
@@ -167,19 +165,6 @@ function CommonPlayerGame() {
 
     return () => clearInterval(pingInterval);
   }, [currentIndex]);
-
-  useEffect(() => {
-    async function fetchPlayers() {
-      try {
-        const data = await getPlayers();
-        setPlayers(data);
-      } catch (error) {
-        console.error('Error fetching players:', error);
-      }
-    }
-
-    fetchPlayers();
-  }, []);
 
 	const currentQuestion = gameData[currentIndex];
 
