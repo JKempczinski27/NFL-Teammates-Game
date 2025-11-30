@@ -116,12 +116,13 @@ class GameViewModel: ObservableObject {
             name: playerName,
             email: playerEmail,
             gameType: "journeyman",
-            mode: gameMode.rawValue,
-            durationInSeconds: durationInSeconds,
-            guesses: guesses,
             correctCount: correctCount,
-            sharedOnSocial: sharedOnSocial,
-            sessionId: UserDefaults.standard.string(forKey: "sessionId") ?? ""
+            durationInSeconds: durationInSeconds,
+            score: correctCount * 10, // Simple scoring: 10 points per correct answer
+            sessionId: UserDefaults.standard.string(forKey: "sessionId") ?? "",
+            mode: gameMode.rawValue,
+            guesses: guesses,
+            sharedOnSocial: sharedOnSocial
         )
 
         Task {
