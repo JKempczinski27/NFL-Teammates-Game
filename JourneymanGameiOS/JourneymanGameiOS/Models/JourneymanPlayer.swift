@@ -64,10 +64,13 @@ struct GameData: Codable {
     let name: String
     let email: String
     let gameType: String
-    let mode: String
-    let durationInSeconds: Int
-    let guesses: [String]
     let correctCount: Int
-    let sharedOnSocial: Bool
+    let durationInSeconds: Int
+    let score: Int
     let sessionId: String
+
+    // Additional metadata (optional for backend)
+    let mode: String?
+    let guesses: [String]?
+    let sharedOnSocial: Bool?
 }

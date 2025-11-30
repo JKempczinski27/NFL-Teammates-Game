@@ -52,6 +52,22 @@ class TriviaViewModel: ObservableObject {
                 playerEmail: playerEmail,
                 team: team.name
             )
+
+            // Register player with backend
+            Task {
+                do {
+                    let sessionId = UserDefaults.standard.string(forKey: "sessionId") ?? UUID().uuidString
+                    try await APIClient.shared.registerPlayer(
+                        name: playerName,
+                        email: playerEmail,
+                        favoriteTeam: team.name,
+                        sessionId: sessionId
+                    )
+                    print("✅ Player registered")
+                } catch {
+                    print("❌ Error registering player: \(error)")
+                }
+            }
         }
     }
 
@@ -139,15 +155,17 @@ class TriviaViewModel: ObservableObject {
 
             Task {
                 do {
-                    try await APIClient.shared.savePlayer(
+                    let sessionId = UserDefaults.standard.string(forKey: "sessionId") ?? UUID().uuidString
+                    try await APIClient.shared.submitGameData(
                         name: playerName,
                         email: playerEmail,
                         team: team.name,
-                        score: yards
+                        score: yards,
+                        sessionId: sessionId
                     )
                     playerSaved = true
                 } catch {
-                    print("❌ Error saving player: \(error)")
+                    print("❌ Error submitting game data: \(error)")
                 }
             }
         }

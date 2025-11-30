@@ -14,7 +14,7 @@ class APIClient {
     private init() {}
 
     func uploadGameData(_ gameData: GameData) async throws {
-        let url = URL(string: "\(baseURL)/api/journeyman")!
+        let url = URL(string: "\(baseURL)/api/game-data")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -30,7 +30,7 @@ class APIClient {
             throw APIError.invalidResponse
         }
 
-        print("✅ Game data uploaded successfully")
+        print("✅ Game data uploaded successfully to /api/game-data")
     }
 
     func trackEvent(_ event: TrackingEvent) async throws {

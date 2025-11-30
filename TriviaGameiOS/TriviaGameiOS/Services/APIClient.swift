@@ -13,7 +13,7 @@ class APIClient {
 
     private init() {}
 
-    func savePlayer(name: String, email: String, team: String, score: Int) async throws {
+    func registerPlayer(name: String, email: String, favoriteTeam: String, sessionId: String) async throws {
         let url = URL(string: "\(baseURL)/api/players")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -22,20 +22,49 @@ class APIClient {
         let payload: [String: Any] = [
             "name": name,
             "email": email,
-            "team": team,
-            "score": score
+            "gameType": "trivia",
+            "favoriteTeam": favoriteTeam,
+            "sessionId": sessionId
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
             throw APIError.invalidResponse
         }
 
-        print("✅ Player saved successfully")
+        print("✅ Player registered successfully")
+    }
+
+    func submitGameData(name: String, email: String, team: String, score: Int, sessionId: String) async throws {
+        let url = URL(string: "\(baseURL)/api/game-data")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = [
+            "name": name,
+            "email": email,
+            "gameType": "trivia",
+            "score": score,
+            "correctCount": 0, // Trivia doesn't track individual correct count
+            "durationInSeconds": 0, // Trivia doesn't track duration
+            "sessionId": sessionId
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.invalidResponse
+        }
+
+        print("✅ Game data submitted successfully to /api/game-data")
     }
 
     func trackEvent(_ event: TrackingEvent) async throws {
