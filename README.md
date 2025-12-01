@@ -6,6 +6,14 @@ A collection of three interactive NFL trivia and guessing games with a unified b
 
 ```
 NFL-Teammates-Game/
+├── landing-page/               # 🆕 Unified game selector landing page
+│   ├── src/
+│   │   ├── components/        # Landing & GameSelector components
+│   │   ├── hooks/             # Player stats tracking
+│   │   └── fonts/             # Custom fonts
+│   ├── public/                # Game thumbnails & assets
+│   └── package.json
+│
 ├── backend/                    # Shared backend for all three games
 │   ├── routes/
 │   │   ├── analytics.js       # Comprehensive analytics API
@@ -22,17 +30,17 @@ NFL-Teammates-Game/
 │   ├── package.json
 │   └── index.js               # Main server file
 │
-├── nfl-teammates-game/        # NFL Teammates Game (frontend)
+├── nfl-teammates-game/        # NFL Teammates Game ("Huddle")
 │   ├── src/
 │   ├── public/
 │   └── package.json
 │
-├── journeyman/                # Journeyman Game (frontend)
+├── journeyman/                # Journeyman Game
 │   ├── src/
 │   ├── public/
 │   └── package.json
 │
-├── nfl-trivia-game/           # NFL Trivia Game (frontend)
+├── nfl-trivia-game/           # NFL Trivia Game ("Long Drive")
 │   ├── src/
 │   ├── public/
 │   └── package.json
@@ -40,9 +48,30 @@ NFL-Teammates-Game/
 └── Documentation files...
 ```
 
-## 🎮 Games
+## 🎮 Landing Page & Games
 
-### 1. NFL Teammates Game
+### 🆕 NFL GameHub Landing Page
+A unified landing page that provides a game selector interface for all three NFL games.
+
+**Location**: `landing-page/`
+
+**Features**:
+- Retro arcade-themed design with football pattern background
+- Game selector with thumbnails for all three games
+- Player stats tracking (days played, streaks, game completions)
+- Responsive design for desktop and mobile
+- Privacy-conscious localStorage-based tracking
+
+**Routes**:
+- `/` - Main landing page with "Enter" button
+- `/games` - Game selector showing all available games
+- `/trivia` - Long Drive (trivia game)
+- `/teammates` - Huddle (teammates game)
+- `/journeyman` - Journeyman game
+
+See `LANDING_PAGE_INTEGRATION.md` for detailed integration documentation.
+
+### 1. NFL Teammates Game ("Huddle")
 Interactive game where players guess which NFL teams two players have in common.
 
 **Location**: `nfl-teammates-game/`
@@ -52,7 +81,7 @@ Challenge players to identify NFL players who have played for multiple teams thr
 
 **Location**: `journeyman/`
 
-### 3. NFL Trivia Game
+### 3. NFL Trivia Game ("Long Drive")
 Test your NFL knowledge with trivia questions across various categories.
 
 **Location**: `nfl-trivia-game/`
@@ -136,6 +165,7 @@ SENTRY_DSN=                     # Optional: error tracking
 ## 📚 Documentation
 
 ### Backend & Deployment
+- **🆕 Landing Page Integration**: `LANDING_PAGE_INTEGRATION.md` - GameHub integration guide
 - **Quick Deploy**: `QUICK_DEPLOY.md` - Fast deployment guide
 - **Railway Deploy**: `RAILWAY_DEPLOY.md` - Detailed Railway setup
 - **Render Deploy**: `RENDER_DEPLOY.md` - Detailed Render setup
@@ -163,6 +193,12 @@ SENTRY_DSN=                     # Optional: error tracking
 
 ### Install Dependencies
 
+**Landing Page** (NEW):
+```bash
+cd landing-page
+npm install
+```
+
 **Backend**:
 ```bash
 cd backend
@@ -182,6 +218,16 @@ npm install
 ```
 
 ### Run Locally
+
+**Option 1: Run Landing Page** (Recommended for unified experience):
+```bash
+cd landing-page
+npm start
+# Runs on http://localhost:3000
+# Provides unified access to all games
+```
+
+**Option 2: Run Individual Games**:
 
 **Backend**:
 ```bash
