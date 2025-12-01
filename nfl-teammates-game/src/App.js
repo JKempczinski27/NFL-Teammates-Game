@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, TextField, Typography, Button, Card, CardMedia, Grid } from '@mui/material';
+import { Box, TextField, Typography, Button, Card, CardContent, CardMedia, Grid } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
