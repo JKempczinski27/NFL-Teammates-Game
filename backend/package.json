@@ -13,7 +13,9 @@
     "test:unit": "cross-env NODE_ENV=test jest --testPathPattern=unit --runInBand",
     "test:integration": "cross-env NODE_ENV=test jest --testPathPattern=integration --runInBand",
     "test:load": "cross-env NODE_ENV=test jest --testPathPattern=load --runInBand",
-    "test:security": "cross-env NODE_ENV=test jest --testPathPattern=security --runInBand"
+    "test:security": "cross-env NODE_ENV=test jest --testPathPattern=security --runInBand",
+    "test:db": "node test-railway-connection.js",
+    "setup:test": "bash setup-test-env.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.932.0",
