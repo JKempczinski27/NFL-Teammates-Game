@@ -13,6 +13,7 @@ const games = [
 export default function GameSelector() {
   useEffect(() => {
     logDayPlayed(); // Track that the user visited today
+    sessionStorage.setItem('visited_game_selector', 'true'); // Mark game selector as visited
   }, []);
 
   return (
