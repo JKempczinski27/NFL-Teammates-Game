@@ -1,0 +1,60 @@
+{
+  "name": "nfl-games-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified NFL Games Monorepo - All games accessible from a single deployment",
+  "workspaces": [
+    "nfl-teammates-game",
+    "nfl-trivia-game",
+    "journeyman",
+    "landing-page",
+    "dashboard",
+    "backend"
+  ],
+  "scripts": {
+    "build": "node build-unified.js",
+    "build:all": "node build-unified.js",
+    "build:landing": "cd landing-page && npm install && npm run build",
+    "build:teammates": "cd nfl-teammates-game && npm install && npm run build",
+    "build:trivia": "cd nfl-trivia-game && npm install && npm run build",
+    "build:journeyman": "cd journeyman && npm install && npm run build",
+    "build:dashboard": "echo 'Dashboard is static HTML - no build needed'",
+    "dev": "npm run dev:landing",
+    "dev:landing": "cd landing-page && npm start",
+    "dev:teammates": "cd nfl-teammates-game && npm start",
+    "dev:trivia": "cd nfl-trivia-game && npm run dev",
+    "dev:journeyman": "cd journeyman && npm start",
+    "dev:backend": "cd backend && npm start",
+    "serve": "npx serve public",
+    "test": "npm run test:teammates && npm run test:trivia && npm run test:journeyman && npm run test:backend",
+    "test:teammates": "cd nfl-teammates-game && npm test -- --passWithNoTests",
+    "test:trivia": "cd nfl-trivia-game && npm test -- --passWithNoTests",
+    "test:journeyman": "cd journeyman && npm test -- --passWithNoTests",
+    "test:backend": "cd backend && npm test",
+    "install:all": "npm install && npm run install:workspaces",
+    "install:workspaces": "npm install --workspaces",
+    "clean": "npm run clean:builds && npm run clean:modules",
+    "clean:builds": "rm -rf landing-page/build nfl-teammates-game/build nfl-trivia-game/dist journeyman/build public",
+    "clean:modules": "rm -rf node_modules landing-page/node_modules nfl-teammates-game/node_modules nfl-trivia-game/node_modules journeyman/node_modules backend/node_modules",
+    "vercel-build": "node build-unified.js"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JKempczinski27/NFL-Teammates-Game.git"
+  },
+  "keywords": [
+    "nfl",
+    "games",
+    "monorepo",
+    "react",
+    "trivia",
+    "teammates",
+    "journeyman"
+  ],
+  "author": "JKempczinski27",
+  "license": "MIT"
+}

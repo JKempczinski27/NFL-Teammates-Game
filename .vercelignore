@@ -1,0 +1,58 @@
+# Development files
+node_modules
+.env
+.env.local
+.env.development
+.env.test
+
+# Build artifacts (will be in public/)
+landing-page/build
+nfl-teammates-game/build
+nfl-trivia-game/dist
+journeyman/build
+
+# Test files
+**/__tests__
+**/*.test.js
+**/*.test.jsx
+**/*.spec.js
+**/cypress
+**/coverage
+**/.lighthouseci
+
+# Documentation
+*.md
+!README.md
+Docs
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CI/CD configs for other platforms
+railway.json
+render.yaml
+nixpacks.toml
+**/railway.json
+**/nixpacks.toml
+
+# Temporary files
+tmp
+temp
+*.tmp
