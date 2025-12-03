@@ -6,7 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../index');
+const pool = require('../config/database');
 
 /**
  * GET /api/data-protection/health

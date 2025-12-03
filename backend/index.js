@@ -25,22 +25,8 @@ if (process.env.SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
-// Optimized DB connection pool for serverless environment (Vercel)
-// Serverless functions are ephemeral, so we need minimal connection pooling
-const isVercel = process.env.VERCEL === '1';
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-  // Connection pool optimization for serverless
-  max: isVercel ? 1 : 20, // Use 1 connection for Vercel, 20 for traditional hosting
-  min: isVercel ? 0 : 5, // No minimum connections for serverless
-  idleTimeoutMillis: isVercel ? 1000 : 30000, // Quick cleanup for serverless (1s vs 30s)
-  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
-  maxUses: 7500, // Close (and replace) a connection after it has been used 7500 times
-  allowExitOnIdle: isVercel ? true : false, // Allow pool to close when idle in serverless
-});
+// Import centralized database connection pool
+const pool = require('./config/database');
 
 // Initialize Redis for caching
 // Note: Set REDIS_URL in your Railway environment variables
@@ -300,6 +286,7 @@ app.use('/api/data-protection', dataProtectionRouter);
 
 // For Vercel serverless, we export the app instead of listening
 // For local development, we start the server
+const isVercel = process.env.VERCEL === '1';
 if (!isVercel) {
   app.listen(port, () => {
     console.log(`\n${'='.repeat(60)}`);

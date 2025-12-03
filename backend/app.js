@@ -1,25 +1,27 @@
 // Separate app configuration from server startup for testing
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
 
-// DB connection using Railway's connection string
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+// Import centralized database connection pool
+const pool = require('./config/database');
 
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // Health check route
 app.get('/', (req, res) => {
   res.send('Backend is running');
+});
+
+// Dashboard route
+app.get('/dashboard', (req, res) => {
+  res.sendFile('dashboard.html', { root: './public' });
 });
 
 // Save player info

@@ -6,19 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
-
-// Import pool from parent module
-let pool;
-try {
-  pool = require('../index').pool;
-} catch (err) {
-  const { Pool } = require('pg');
-  require('dotenv').config();
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-}
+const pool = require('../config/database');
 
 // ============================================
 // DASHBOARD & OVERVIEW ENDPOINTS

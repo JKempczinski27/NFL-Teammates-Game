@@ -8,7 +8,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../index');
+const pool = require('../config/database');
 
 /**
  * POST /api/players
@@ -90,8 +90,11 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT
         id, name, email, game_type, games_played, favorite_team,
-        total_sessions, total_questions_answered, completion_rate,
-        last_activity_at, created_at
+        total_sessions, 
+        trivia_score, trivia_best_score, trivia_games_played,
+        journeyman_correct_count, journeyman_best_correct, journeyman_games_played,
+        teammates_games_played, teammates_best_score, teammates_completion_count,
+        created_at, updated_at
       FROM players
     `;
     const params = [];
@@ -99,10 +102,10 @@ router.get('/', async (req, res) => {
     if (gameType) {
       query += ` WHERE $1 = ANY(games_played)`;
       params.push(gameType);
-      query += ` ORDER BY last_activity_at DESC LIMIT $2`;
+      query += ` ORDER BY updated_at DESC LIMIT $2`;
       params.push(limit);
     } else {
-      query += ` ORDER BY last_activity_at DESC LIMIT $1`;
+      query += ` ORDER BY updated_at DESC LIMIT $1`;
       params.push(limit);
     }
 
@@ -115,6 +118,17 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching players:', err);
+    
+    // If database is not connected, return empty array with helpful message
+    if (err.code === 'ECONNREFUSED') {
+      return res.json({
+        success: true,
+        count: 0,
+        players: [],
+        message: 'Database not connected. Please set DATABASE_URL environment variable.'
+      });
+    }
+    
     res.status(500).json({ error: 'Error fetching players' });
   }
 });
@@ -133,11 +147,7 @@ router.get('/:email', async (req, res) => {
         favorite_team, trivia_score, trivia_best_score, trivia_games_played,
         journeyman_correct_count, journeyman_best_correct, journeyman_games_played,
         teammates_games_played, teammates_best_score, teammates_completion_count,
-        total_sessions, total_questions_viewed, total_questions_answered,
-        total_correct_answers, total_wrong_answers, total_time_spent_seconds,
-        total_shares, completion_rate, avg_questions_per_session,
-        best_streak, current_streak, last_activity_at, last_game_played_at,
-        created_at, metadata
+        total_sessions, created_at, updated_at, metadata
       FROM players WHERE email = $1`,
       [email.toLowerCase()]
     );
@@ -209,27 +219,15 @@ router.put('/:email', async (req, res) => {
       updates.push(`journeyman_games_played = journeyman_games_played + 1`);
       values.push(journeymanDurationSeconds);
     }
-    if (sessionData) {
-      if (sessionData.questionsAnswered !== undefined) {
-        updates.push(`total_questions_answered = total_questions_answered + $${paramCount++}`);
-        values.push(sessionData.questionsAnswered);
-      }
-      if (sessionData.timeSpent !== undefined) {
-        updates.push(`total_time_spent_seconds = total_time_spent_seconds + $${paramCount++}`);
-        values.push(sessionData.timeSpent);
-      }
-    }
     if (metadata) {
       updates.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${paramCount++}::jsonb`);
       values.push(JSON.stringify(metadata));
     }
 
-    // Always update timestamp and last activity
+    // Always update timestamp
     updates.push('updated_at = CURRENT_TIMESTAMP');
-    updates.push('last_activity_at = CURRENT_TIMESTAMP');
-    updates.push('last_game_played_at = CURRENT_TIMESTAMP');
 
-    if (updates.length === 3) {
+    if (updates.length === 1) {
       // Only timestamp updates, nothing else to update
       return res.status(400).json({ error: 'No valid fields to update' });
     }

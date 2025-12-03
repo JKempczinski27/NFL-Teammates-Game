@@ -298,7 +298,7 @@
                 id="apiUrl" 
                 class="api-url-input" 
                 placeholder="Backend API URL (e.g., https://your-api.railway.app)"
-                value=""
+                value="https://nfl-teammates-db-production.up.railway.app"
             >
             <button class="btn-primary" onclick="loadData()">🔄 Load Data</button>
             <button class="btn-success" onclick="exportCSV()">📊 Export CSV</button>
@@ -625,15 +625,23 @@
 
         // Load saved API URL on page load
         window.addEventListener('DOMContentLoaded', () => {
+            const defaultUrl = 'https://nfl-teammates-db-production.up.railway.app';
             const savedUrl = localStorage.getItem('nflApiUrl');
+            
+            // Use saved URL if exists, otherwise use default
             if (savedUrl) {
                 document.getElementById('apiUrl').value = savedUrl;
+            } else {
+                document.getElementById('apiUrl').value = defaultUrl;
             }
 
             // Save API URL when changed
             document.getElementById('apiUrl').addEventListener('change', (e) => {
                 localStorage.setItem('nflApiUrl', e.target.value);
             });
+
+            // Auto-load data on page load
+            loadData();
         });
     </script>
 </body>

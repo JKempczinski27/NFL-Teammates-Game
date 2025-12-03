@@ -8,22 +8,7 @@
 
 const express = require('express');
 const router = express.Router();
-
-// Import pool from parent module to avoid duplicate pool creation
-let pool;
-try {
-  pool = require('../index').pool;
-} catch (err) {
-  // Fallback for testing or standalone use
-  const { Pool } = require('pg');
-  require('dotenv').config();
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-}
+const pool = require('../config/database');
 
 /**
  * Main tracking endpoint
