@@ -12,6 +12,7 @@ nfl-teamates-game/backend/.env
 # Build output
 build/
 dist/
+public/
 nfl-teamates-game/build/
 
 # Logs

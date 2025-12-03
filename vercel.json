@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "name": "nfl-games-unified",
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/backend"
+    },
+    {
+      "source": "/teammates",
+      "destination": "/teammates/index.html"
+    },
+    {
+      "source": "/teammates/:path((?!.*\\.).*)",
+      "destination": "/teammates/index.html"
+    },
+    {
+      "source": "/trivia",
+      "destination": "/trivia/index.html"
+    },
+    {
+      "source": "/trivia/:path((?!.*\\.).*)",
+      "destination": "/trivia/index.html"
+    },
+    {
+      "source": "/journeyman",
+      "destination": "/journeyman/index.html"
+    },
+    {
+      "source": "/journeyman/:path((?!.*\\.).*)",
+      "destination": "/journeyman/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/dashboard/:path((?!.*\\.).*)",
+      "destination": "/dashboard/index.html"
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "functions": {
+    "api/backend.js": {
+      "memory": 1024,
+      "maxDuration": 10,
+      "includeFiles": "backend/**"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/:path*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
