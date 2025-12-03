@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Games - Player Data Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .api-url-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .api-url-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        select, input[type="text"], input[type="date"] {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #dee2e6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-teammates {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-journeyman {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-trivia {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .api-url-input {
+                width: 100%;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏈 NFL Games Dashboard</h1>
+            <p>Player Data Management & Export</p>
+        </div>
+
+        <div class="controls">
+            <input 
+                type="text" 
+                id="apiUrl" 
+                class="api-url-input" 
+                placeholder="Backend API URL (e.g., https://your-api.railway.app)"
+                value=""
+            >
+            <button class="btn-primary" onclick="loadData()">🔄 Load Data</button>
+            <button class="btn-success" onclick="exportCSV()">📊 Export CSV</button>
+            <button class="btn-success" onclick="exportJSON()">📄 Export JSON</button>
+        </div>
+
+        <div id="statsSection" style="display: none;">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Players</div>
+                    <div class="stat-value" id="totalPlayers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Teammates</div>
+                    <div class="stat-value" id="teammatesCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Journeyman</div>
+                    <div class="stat-value" id="journeymanCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Trivia</div>
+                    <div class="stat-value" id="triviaCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="messageContainer"></div>
+
+            <div id="filtersSection" style="display: none;" class="filters">
+                <select id="gameFilter" onchange="applyFilters()">
+                    <option value="">All Games</option>
+                    <option value="teammates">Teammates</option>
+                    <option value="journeyman">Journeyman</option>
+                    <option value="trivia">Trivia</option>
+                </select>
+                <input 
+                    type="text" 
+                    id="searchFilter" 
+                    placeholder="Search by name or email..."
+                    oninput="applyFilters()"
+                >
+                <input 
+                    type="date" 
+                    id="dateFromFilter" 
+                    onchange="applyFilters()"
+                >
+                <input 
+                    type="date" 
+                    id="dateToFilter" 
+                    onchange="applyFilters()"
+                >
+                <button class="btn-secondary" onclick="clearFilters()">Clear Filters</button>
+            </div>
+
+            <div id="loadingSection" style="display: none;" class="loading">
+                <div class="spinner"></div>
+                <p>Loading player data...</p>
+            </div>
+
+            <div id="emptySection" class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <h2>No Data Loaded</h2>
+                <p>Enter your backend API URL above and click "Load Data" to get started.</p>
+            </div>
+
+            <div id="tableSection" style="display: none;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Game Type</th>
+                                <th>Games Played</th>
+                                <th>Total Sessions</th>
+                                <th>Favorite Team</th>
+                                <th>Updated</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playerTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allPlayers = [];
+        let filteredPlayers = [];
+
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function getApiUrl() {
+            const url = document.getElementById('apiUrl').value.trim();
+            if (!url) {
+                showMessage('Please enter a valid API URL');
+                return null;
+            }
+            // Remove trailing slash
+            return url.replace(/\/$/, '');
+        }
+
+        async function loadData() {
+            const apiUrl = getApiUrl();
+            if (!apiUrl) return;
+
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('emptySection').style.display = 'none';
+            document.getElementById('tableSection').style.display = 'none';
+            document.getElementById('statsSection').style.display = 'none';
+            document.getElementById('filtersSection').style.display = 'none';
+            document.getElementById('messageContainer').innerHTML = '';
+
+            try {
+                // Test connection first
+                const healthResponse = await fetch(`${apiUrl}/health`);
+                if (!healthResponse.ok) {
+                    throw new Error('Backend server is not responding');
+                }
+
+                // Load players data
+                const response = await fetch(`${apiUrl}/api/players`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                allPlayers = data.players || [];
+                filteredPlayers = [...allPlayers];
+
+                updateStats();
+                renderTable();
+
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('statsSection').style.display = 'block';
+                document.getElementById('filtersSection').style.display = 'flex';
+                document.getElementById('tableSection').style.display = 'block';
+
+                showMessage(`Successfully loaded ${allPlayers.length} players`, 'success');
+            } catch (error) {
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('emptySection').style.display = 'block';
+                showMessage(`Error: ${error.message}`, 'error');
+                console.error('Load error:', error);
+            }
+        }
+
+        function updateStats() {
+            const teammates = allPlayers.filter(p => 
+                p.games_played && p.games_played.includes('teammates')
+            ).length;
+            const journeyman = allPlayers.filter(p => 
+                p.games_played && p.games_played.includes('journeyman')
+            ).length;
+            const trivia = allPlayers.filter(p => 
+                p.games_played && p.games_played.includes('trivia')
+            ).length;
+
+            document.getElementById('totalPlayers').textContent = allPlayers.length;
+            document.getElementById('teammatesCount').textContent = teammates;
+            document.getElementById('journeymanCount').textContent = journeyman;
+            document.getElementById('triviaCount').textContent = trivia;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('playerTableBody');
+            tbody.innerHTML = '';
+
+            if (filteredPlayers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #6c757d;">
+                            No players found matching your filters.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredPlayers.forEach(player => {
+                const row = document.createElement('tr');
+                
+                const gamesPlayed = player.games_played || [];
+                const gamesBadges = gamesPlayed.map(game => {
+                    const badgeClass = `badge badge-${game}`;
+                    return `<span class="${badgeClass}">${game}</span>`;
+                }).join(' ');
+
+                row.innerHTML = `
+                    <td>${escapeHtml(player.name || 'N/A')}</td>
+                    <td>${escapeHtml(player.email || 'N/A')}</td>
+                    <td><span class="badge badge-${player.game_type || 'teammates'}">${player.game_type || 'teammates'}</span></td>
+                    <td>${gamesBadges || 'None'}</td>
+                    <td>${player.total_sessions || 0}</td>
+                    <td>${escapeHtml(player.favorite_team || 'N/A')}</td>
+                    <td>${formatDate(player.updated_at)}</td>
+                    <td>${formatDate(player.created_at)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function applyFilters() {
+            const gameFilter = document.getElementById('gameFilter').value;
+            const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+
+            filteredPlayers = allPlayers.filter(player => {
+                // Game filter
+                if (gameFilter && player.games_played && !player.games_played.includes(gameFilter)) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchFilter) {
+                    const name = (player.name || '').toLowerCase();
+                    const email = (player.email || '').toLowerCase();
+                    if (!name.includes(searchFilter) && !email.includes(searchFilter)) {
+                        return false;
+                    }
+                }
+
+                // Date filters
+                if (dateFrom) {
+                    const playerDate = new Date(player.created_at);
+                    const filterDate = new Date(dateFrom);
+                    if (playerDate < filterDate) return false;
+                }
+
+                if (dateTo) {
+                    const playerDate = new Date(player.created_at);
+                    const filterDate = new Date(dateTo);
+                    filterDate.setHours(23, 59, 59, 999);
+                    if (playerDate > filterDate) return false;
+                }
+
+                return true;
+            });
+
+            renderTable();
+        }
+
+        function clearFilters() {
+            document.getElementById('gameFilter').value = '';
+            document.getElementById('searchFilter').value = '';
+            document.getElementById('dateFromFilter').value = '';
+            document.getElementById('dateToFilter').value = '';
+            applyFilters();
+        }
+
+        function exportCSV() {
+            if (filteredPlayers.length === 0) {
+                showMessage('No data to export', 'error');
+                return;
+            }
+
+            const headers = ['Name', 'Email', 'Game Type', 'Games Played', 'Total Sessions', 'Favorite Team', 'Last Activity', 'Created At'];
+            const rows = filteredPlayers.map(player => [
+                player.name || '',
+                player.email || '',
+                player.game_type || '',
+                (player.games_played || []).join(';'),
+                player.total_sessions || 0,
+                player.favorite_team || '',
+                player.updated_at || '',
+                player.created_at || ''
+            ]);
+
+            let csv = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            downloadFile(csv, 'nfl-players-data.csv', 'text/csv');
+            showMessage('CSV exported successfully!', 'success');
+        }
+
+        function exportJSON() {
+            if (filteredPlayers.length === 0) {
+                showMessage('No data to export', 'error');
+                return;
+            }
+
+            const json = JSON.stringify(filteredPlayers, null, 2);
+            downloadFile(json, 'nfl-players-data.json', 'application/json');
+            showMessage('JSON exported successfully!', 'success');
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load saved API URL on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('nflApiUrl');
+            if (savedUrl) {
+                document.getElementById('apiUrl').value = savedUrl;
+            }
+
+            // Save API URL when changed
+            document.getElementById('apiUrl').addEventListener('change', (e) => {
+                localStorage.setItem('nflApiUrl', e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
