@@ -1,6 +1,5 @@
 // src/components/GameSelector.js
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import './GameSelector.css';
 import { logDayPlayed } from '../hooks/usePlayerStats';
 
@@ -21,10 +20,10 @@ export default function GameSelector() {
       <h1>Select Your Game</h1>
       <div className="thumbnail-container">
         {games.map((game, index) => (
-          <Link to={game.path} className="game-thumbnail" key={index}>
+          <a href={game.path} className="game-thumbnail" key={index}>
             <img src={game.image} alt={game.title} />
             <p>{game.title}</p>
-          </Link>
+          </a>
         ))}
       </div>
     </div>
