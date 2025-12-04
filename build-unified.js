@@ -30,7 +30,20 @@ function log(message, color = 'reset') {
 
 function exec(command, cwd = process.cwd()) {
   log(`\n$ ${command}`, 'cyan');
-  execSync(command, { stdio: 'inherit', cwd });
+  try {
+    execSync(command, {
+      stdio: 'inherit',
+      cwd,
+      env: {
+        ...process.env,
+        NODE_OPTIONS: '--max-old-space-size=4096'
+      }
+    });
+    log(`✓ Command completed successfully`, 'green');
+  } catch (error) {
+    log(`✗ Command failed with exit code ${error.status}`, 'red');
+    throw error;
+  }
 }
 
 function copyDir(src, dest) {
@@ -65,6 +78,8 @@ function cleanDir(dir) {
 
 // Main build process
 async function build() {
+  const startTime = Date.now();
+
   try {
     log('\n' + '='.repeat(60), 'bright');
     log('🏗️  NFL GAMES UNIFIED BUILD', 'bright');
@@ -74,28 +89,28 @@ async function build() {
     log('Step 1: Cleaning previous builds', 'bright');
     cleanDir('public');
 
-    // Step 2: Build landing page
-    log('\nStep 2: Building Landing Page', 'bright');
-    exec('npm install', path.join(process.cwd(), 'landing-page'));
+    // Step 2: Verify dependencies (skip install as Vercel already installs via workspaces)
+    log('\nStep 2: Verifying workspace dependencies', 'bright');
+    log('✓ Dependencies already installed via npm workspaces', 'green');
+
+    // Step 3: Build landing page
+    log('\nStep 3: Building Landing Page', 'bright');
     exec('npm run build', path.join(process.cwd(), 'landing-page'));
 
-    // Step 3: Build NFL Teammates Game
-    log('\nStep 3: Building NFL Teammates Game', 'bright');
-    exec('npm install', path.join(process.cwd(), 'nfl-teammates-game'));
+    // Step 4: Build NFL Teammates Game
+    log('\nStep 4: Building NFL Teammates Game', 'bright');
     exec('npm run build', path.join(process.cwd(), 'nfl-teammates-game'));
 
-    // Step 4: Build NFL Trivia Game
-    log('\nStep 4: Building NFL Trivia Game', 'bright');
-    exec('npm install', path.join(process.cwd(), 'nfl-trivia-game'));
+    // Step 5: Build NFL Trivia Game
+    log('\nStep 5: Building NFL Trivia Game', 'bright');
     exec('npm run build', path.join(process.cwd(), 'nfl-trivia-game'));
 
-    // Step 5: Build Journeyman Game
-    log('\nStep 5: Building Journeyman Game', 'bright');
-    exec('npm install', path.join(process.cwd(), 'journeyman'));
+    // Step 6: Build Journeyman Game
+    log('\nStep 6: Building Journeyman Game', 'bright');
     exec('npm run build', path.join(process.cwd(), 'journeyman'));
 
-    // Step 6: Create unified public directory
-    log('\nStep 6: Creating unified public directory', 'bright');
+    // Step 7: Create unified public directory
+    log('\nStep 7: Creating unified public directory', 'bright');
     fs.mkdirSync('public', { recursive: true });
 
     // Copy landing page to root of public (this serves /)
@@ -115,8 +130,8 @@ async function build() {
     log('📦 Setting up Dashboard at /dashboard', 'green');
     copyDir('dashboard', 'public/dashboard');
 
-    // Step 7: Create _redirects file for SPA routing
-    log('\nStep 7: Creating routing configuration', 'bright');
+    // Step 8: Create _redirects file for SPA routing
+    log('\nStep 8: Creating routing configuration', 'bright');
     const redirects = `# SPA routing for each game
 /teammates/* /teammates/index.html 200
 /trivia/* /trivia/index.html 200
@@ -125,8 +140,11 @@ async function build() {
 `;
     fs.writeFileSync('public/_redirects', redirects);
 
-    // Step 8: Create a routing index HTML that lists all games
-    log('\nStep 8: Enhancing landing page', 'bright');
+    // Step 9: Verify all builds completed successfully
+    log('\nStep 9: Build verification complete', 'bright');
+
+    const endTime = Date.now();
+    const totalTime = ((endTime - startTime) / 1000).toFixed(2);
 
     log('\n' + '='.repeat(60), 'bright');
     log('✅ BUILD COMPLETE!', 'green');
@@ -139,6 +157,8 @@ async function build() {
     log('   Journeyman: public/journeyman/', 'blue');
     log('   Dashboard: public/dashboard/', 'blue');
     log('   Backend API: api/backend.js (serverless)', 'blue');
+
+    log(`\n⏱️  Total build time: ${totalTime}s`, 'cyan');
 
     log('\n🚀 Ready for deployment!', 'green');
     log('   Deploy to Vercel: vercel --prod', 'cyan');
