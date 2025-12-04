@@ -7,12 +7,6 @@ function getTodayISO() {
   return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
-function getYesterdayISO() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
-
 // --- LocalStorage keys ---
 const STORAGE_KEYS = {
   PLAY_DAYS: "nflgh_playDays",
