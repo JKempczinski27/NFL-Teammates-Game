@@ -127,6 +127,42 @@ https://your-api.railway.app/dashboard
 
 See `DASHBOARD_GUIDE.md` and `ANALYTICS_GUIDE.md` for details.
 
+## 🧪 A/B Testing & Content Experiments
+
+Run content experiments with a complete A/B testing framework!
+
+**Access the experiments dashboard at:**
+```
+https://your-api.railway.app/experiments-dashboard.html
+```
+
+**Features**:
+- Test anything: UI changes, button text, question ordering, layouts
+- Automatic variant assignment (consistent per user)
+- Statistical significance calculations (z-scores, p-values, confidence)
+- Beautiful dashboard with real-time results and charts
+- GDPR-compliant (respects OneTrust consent)
+- Multiple experiments running simultaneously
+
+**Quick Example**:
+```javascript
+import { useExperiment, trackGoal } from './utils/experiments';
+
+const variant = useExperiment('button_color', [
+  { id: 'control', weight: 50 },
+  { id: 'green', weight: 50 }
+], 100);
+
+const color = variant === 'green' ? 'green' : 'blue';
+
+// Track conversion
+trackGoal('button_color', 'click', 1);
+```
+
+**Setup**: Run migration `backend/migrations/002_create_ab_testing_tables.sql`
+
+See `AB_TESTING_GUIDE.md` for complete documentation and examples.
+
 ## 🚢 Deployment
 
 ### Quick Deploy (Recommended)
@@ -178,6 +214,8 @@ SENTRY_DSN=                     # Optional: error tracking
 ### Analytics & Data
 - **Analytics Guide**: `ANALYTICS_GUIDE.md` - All analytics endpoints
 - **Dashboard Guide**: `DASHBOARD_GUIDE.md` - Dashboard usage
+- **🆕 A/B Testing Guide**: `AB_TESTING_GUIDE.md` - Content testing & experiments
+- **Enhanced Analytics**: `ENHANCED_ANALYTICS_GUIDE.md` - Advanced player metrics
 - **Database Setup**: `DATABASE_SETUP_GUIDE.md`
 - **Database Verification**: `DATABASE_VERIFICATION_REPORT.md`
 

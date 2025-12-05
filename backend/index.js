@@ -284,6 +284,10 @@ app.use('/api/game-data', gameDataRouter);
 const dataProtectionRouter = require('./routes/data-protection');
 app.use('/api/data-protection', dataProtectionRouter);
 
+// A/B Testing Experiments routes
+const experimentsRouter = require('./routes/experiments');
+app.use('/api/experiments', experimentsRouter);
+
 // For Vercel serverless, we export the app instead of listening
 // For local development, we start the server
 const isVercel = process.env.VERCEL === '1';
