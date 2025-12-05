@@ -15,6 +15,45 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- OneTrust Cookie Consent Notice -->
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
+            type="text/javascript"
+            charset="UTF-8"
+            data-domain-script="%REACT_APP_ONETRUST_DOMAIN_SCRIPT_ID%"></script>
+    <script type="text/javascript">
+      function OptanonWrapper() {
+        // OneTrust callback - fires when consent preferences are updated
+        // Access consent groups via window.OnetrustActiveGroups
+        const allowedGroups = window.OnetrustActiveGroups || "";
+
+        // Standard OneTrust cookie categories:
+        // C0001 - Strictly Necessary Cookies (always active)
+        // C0002 - Performance Cookies (analytics)
+        // C0003 - Functional Cookies
+        // C0004 - Targeting Cookies (advertising)
+
+        const hasNecessary = allowedGroups.includes("C0001");
+        const hasPerformance = allowedGroups.includes("C0002");
+        const hasFunctional = allowedGroups.includes("C0003");
+        const hasTargeting = allowedGroups.includes("C0004");
+
+        // Store consent state for React components
+        window.oneTrustConsent = {
+          necessary: hasNecessary,
+          performance: hasPerformance,
+          functional: hasFunctional,
+          targeting: hasTargeting,
+          timestamp: new Date().toISOString()
+        };
+
+        // Dispatch custom event for React to listen to
+        window.dispatchEvent(new CustomEvent('oneTrustConsentUpdate', {
+          detail: window.oneTrustConsent
+        }));
+      }
+    </script>
+
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

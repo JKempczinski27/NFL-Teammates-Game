@@ -13,12 +13,30 @@ const pool = require('../config/database');
 /**
  * Main tracking endpoint
  * Accepts various event types and saves them to appropriate tables
+ * Includes OneTrust consent verification for GDPR/privacy compliance
  */
 router.post('/', async (req, res) => {
-  const { eventType, eventData, sessionId, timestamp, gameType } = req.body;
+  const { eventType, eventData, sessionId, timestamp, gameType, consentData } = req.body;
 
   if (!eventType || !sessionId) {
     return res.status(400).json({ error: 'Missing required fields: eventType, sessionId' });
+  }
+
+  // OneTrust Consent Verification
+  // Check if consent data is provided and user has consented to performance cookies
+  if (consentData) {
+    if (!consentData.hasConsent || !consentData.consentCategories?.performance) {
+      // User has not consented to performance/analytics cookies
+      console.log(`[OneTrust] Rejected tracking for session ${sessionId} - no performance cookie consent`);
+      return res.status(200).json({
+        success: false,
+        message: 'Tracking skipped - user has not consented to performance cookies',
+        consentRequired: true
+      });
+    }
+  } else {
+    // No consent data provided - for backward compatibility, allow but log warning
+    console.warn(`[OneTrust] Warning: No consent data provided for session ${sessionId}, event ${eventType}`);
   }
 
   // Default to 'teammates' if gameType not specified for backward compatibility
@@ -27,6 +45,11 @@ router.post('/', async (req, res) => {
   const client = await pool.connect();
 
   try {
+    // Log consent information if provided
+    if (consentData && consentData.hasConsent) {
+      await logConsent(client, sessionId, consentData);
+    }
+
     // Always insert into main events table
     await client.query(
       'INSERT INTO events (session_id, game_type, event_type, event_data, timestamp) VALUES ($1, $2, $3, $4, $5)',
@@ -167,6 +190,37 @@ async function handleDropOff(client, sessionId, eventData) {
   );
 }
 
+/**
+ * Log OneTrust consent information for audit trail
+ * This helps with GDPR/privacy compliance by maintaining records of user consent
+ */
+async function logConsent(client, sessionId, consentData) {
+  try {
+    await client.query(
+      `INSERT INTO consent_log (session_id, consent_timestamp, necessary, performance, functional, targeting)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (session_id) DO UPDATE
+       SET consent_timestamp = $2,
+           necessary = $3,
+           performance = $4,
+           functional = $5,
+           targeting = $6,
+           updated_at = NOW()`,
+      [
+        sessionId,
+        consentData.consentTimestamp || new Date(),
+        consentData.consentCategories?.necessary || false,
+        consentData.consentCategories?.performance || false,
+        consentData.consentCategories?.functional || false,
+        consentData.consentCategories?.targeting || false
+      ]
+    );
+  } catch (error) {
+    // If consent_log table doesn't exist, log warning but don't fail the request
+    console.warn('[OneTrust] Could not log consent - table may not exist:', error.message);
+  }
+}
+
 router.get('/', (req, res) => {
   res.json({
     status: 'operational',
@@ -181,6 +235,8 @@ router.get('/', (req, res) => {
       'activity',
       'drop_off'
     ],
+    oneTrustEnabled: true,
+    consentRequired: 'performance cookies required for analytics tracking'
   });
 });
 

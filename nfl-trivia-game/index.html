@@ -9,36 +9,55 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Limelight&display=swap" rel="stylesheet">
     
-    <!-- OneTrust Cookies Consent Notice -->
+    <!-- OneTrust Cookie Consent Notice -->
     <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"
             type="text/javascript"
             charset="UTF-8"
-            data-domain-script="YOUR-DOMAIN-ID"></script>
+            data-domain-script="%VITE_ONETRUST_DOMAIN_SCRIPT_ID%"></script>
     <script type="text/javascript">
       function OptanonWrapper() {
-        console.log("Consent loaded ✅");
-
-        // Example: unlock gameplay if the user consented to at least necessary cookies
+        // OneTrust callback - fires when consent preferences are updated
         const allowedGroups = window.OnetrustActiveGroups || "";
 
-        const hasNecessary = allowedGroups.includes("C0001");
-        const hasAnalytics = allowedGroups.includes("C0002");
-        const hasMarketing = allowedGroups.includes("C0003");
+        // Standard OneTrust cookie categories:
+        // C0001 - Strictly Necessary Cookies (always active)
+        // C0002 - Performance Cookies (analytics)
+        // C0003 - Functional Cookies
+        // C0004 - Targeting Cookies (advertising)
 
+        const hasNecessary = allowedGroups.includes("C0001");
+        const hasPerformance = allowedGroups.includes("C0002");
+        const hasFunctional = allowedGroups.includes("C0003");
+        const hasTargeting = allowedGroups.includes("C0004");
+
+        // Store consent state for React components
+        window.oneTrustConsent = {
+          necessary: hasNecessary,
+          performance: hasPerformance,
+          functional: hasFunctional,
+          targeting: hasTargeting,
+          timestamp: new Date().toISOString()
+        };
+
+        // Dispatch custom event for React to listen to
+        window.dispatchEvent(new CustomEvent('oneTrustConsentUpdate', {
+          detail: window.oneTrustConsent
+        }));
+
+        // Custom flags for game functionality
         if (hasNecessary) {
-          console.log("✅ Necessary consent given – gameplay can be unlocked");
-          window.canStartGame = true; // Custom flag your React app can check
+          window.canStartGame = true;
         }
 
-        if (hasAnalytics) {
-          console.log("📊 Loading analytics scripts...");
-          // e.g., initialize Google Analytics, Mixpanel, etc.
+        // Load analytics scripts if performance cookies are allowed
+        if (hasPerformance) {
+          // Initialize analytics (Google Analytics, Mixpanel, etc.)
           // gtag('config', 'GA_MEASUREMENT_ID');
         }
 
-        if (hasMarketing) {
-          console.log("📣 Loading marketing scripts...");
-          // e.g., initialize Facebook Pixel or HubSpot
+        // Load marketing scripts if targeting cookies are allowed
+        if (hasTargeting) {
+          // Initialize marketing pixels (Facebook Pixel, HubSpot, etc.)
         }
       }
     </script>

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faReddit, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import './App.css'
 import { LazyImage, optimizePlayerImageUrl } from './components/LazyImage';
+import { canTrackAnalytics, getConsentPreferences } from './hooks/useOneTrust';
 
 function getSessionId() {
   let id = localStorage.getItem('sessionId');
@@ -16,8 +17,20 @@ function getSessionId() {
 
 const sessionId = getSessionId();
 
+/**
+ * Track events with OneTrust consent verification
+ * Only tracks analytics events if user has consented to performance cookies
+ */
 async function trackEvent(eventType, eventData) {
+  // Check OneTrust consent before tracking
+  if (!canTrackAnalytics()) {
+    console.log(`[OneTrust] Skipping ${eventType} event - no performance cookie consent`);
+    return;
+  }
+
   try {
+    const consentPreferences = getConsentPreferences();
+
     await fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,6 +40,17 @@ async function trackEvent(eventType, eventData) {
         sessionId,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
+        // Include consent information for audit trail
+        consentData: {
+          hasConsent: true,
+          consentTimestamp: consentPreferences?.timestamp,
+          consentCategories: {
+            necessary: consentPreferences?.necessary || false,
+            performance: consentPreferences?.performance || false,
+            functional: consentPreferences?.functional || false,
+            targeting: consentPreferences?.targeting || false,
+          }
+        }
       }),
     });
   } catch (error) {

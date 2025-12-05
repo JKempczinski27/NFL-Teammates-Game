@@ -172,6 +172,9 @@ SENTRY_DSN=                     # Optional: error tracking
 - **Backend Docs**: `backend/README-CONSOLIDATED.md` - API reference
 - **Backend Summary**: `BACKEND_CONSOLIDATION_SUMMARY.md`
 
+### Privacy & Compliance
+- **🆕 OneTrust Setup**: `ONETRUST_SETUP.md` - Complete cookie consent integration guide
+
 ### Analytics & Data
 - **Analytics Guide**: `ANALYTICS_GUIDE.md` - All analytics endpoints
 - **Dashboard Guide**: `DASHBOARD_GUIDE.md` - Dashboard usage
@@ -273,7 +276,7 @@ curl https://your-api.railway.app/api/analytics/export/trivia?type=sessions > se
 
 See `ANALYTICS_GUIDE.md` for full API documentation.
 
-## 🔐 Security
+## 🔐 Security & Privacy
 
 - ✅ Input validation on all endpoints
 - ✅ SQL injection prevention
@@ -282,6 +285,28 @@ See `ANALYTICS_GUIDE.md` for full API documentation.
 - ✅ Helmet.js security headers
 - ✅ CORS configuration
 - ✅ GDPR compliance endpoints
+- ✅ **OneTrust Cookie Consent** - GDPR-compliant cookie management
+
+### 🍪 OneTrust Cookie Consent
+
+This project includes full OneTrust integration for cookie consent management and GDPR compliance.
+
+**Features**:
+- Cookie consent banner on all apps
+- Granular consent categories (Necessary, Performance, Functional, Targeting)
+- Automatic consent verification before analytics tracking
+- Backend consent audit logging
+- React hook for easy consent management
+
+**Setup**: See `ONETRUST_SETUP.md` for complete integration guide.
+
+**Quick Start**:
+1. Get your OneTrust Domain Script ID from https://my.onetrust.com/
+2. Add to `.env` files: `REACT_APP_ONETRUST_DOMAIN_SCRIPT_ID=your-id`
+3. Run database migration: `backend/migrations/001_create_consent_log_table.sql`
+4. Deploy and test
+
+All code is ready - just add your credentials!
 
 ## 📊 Database Tables
 
@@ -292,6 +317,7 @@ See `ANALYTICS_GUIDE.md` for full API documentation.
 - `share_analytics` - Social sharing
 - `players` - Player information
 - `game_submissions` - Game results
+- `consent_log` - OneTrust cookie consent audit trail
 
 **Analytics Tables**:
 - `daily_metrics` - Daily KPIs
