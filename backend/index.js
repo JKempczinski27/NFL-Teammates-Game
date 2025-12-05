@@ -288,6 +288,10 @@ app.use('/api/data-protection', dataProtectionRouter);
 const experimentsRouter = require('./routes/experiments');
 app.use('/api/experiments', experimentsRouter);
 
+// Super Dashboard Admin routes
+const adminRouter = require('./routes/admin');
+app.use('/api/admin', adminRouter);
+
 // For Vercel serverless, we export the app instead of listening
 // For local development, we start the server
 const isVercel = process.env.VERCEL === '1';
